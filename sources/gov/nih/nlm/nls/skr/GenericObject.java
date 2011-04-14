@@ -21,12 +21,14 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.content.ContentBody;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.util.EntityUtils;
 
 
 import gov.nih.nlm.nls.util.Authenticator;
+import gov.nih.nlm.nls.util.PostUtils;
 import gov.nih.nlm.nls.cas.CasAuth;
 
 /**
@@ -86,7 +88,8 @@ public class GenericObject
   /** service ticket timeout: default 8 minutes */
   public final static int ticketTimeout = Integer.parseInt(System.getProperty("skrapi.cas.ticket.timeout", "480000"));
   /** storage for form elements */
-  MultipartEntity formEntity = new MultipartEntity( HttpMultipartMode.BROWSER_COMPATIBLE );
+  Map<String,ContentBody> formMap = new HashMap<String,ContentBody>();
+  // MultipartEntity formEntity = new MultipartEntity( HttpMultipartMode.BROWSER_COMPATIBLE );
  
 
   // ************************************************************************
@@ -99,9 +102,9 @@ public class GenericObject
     this.ticketTimeStamp = Calendar.getInstance();
     this.initFields();
     try {
-      this.formEntity.addPart("RUN_PROG", new StringBody
+      this.formMap.put("RUN_PROG", new StringBody
 			      ("GENERIC", "text/plain", Charset.forName( "UTF-8" ))); // no validation
-      this.formEntity.addPart("Batch_Command", new StringBody
+      this.formMap.put("Batch_Command", new StringBody
 			      ("skr", "text/plain", Charset.forName( "UTF-8" )));
     } catch (UnsupportedEncodingException  e) {
       throw new RuntimeException(e);
@@ -124,13 +127,13 @@ public class GenericObject
     this.ticketTimeStamp = Calendar.getInstance();
     this.initFields();
     try {
-    this.formEntity.addPart("Batch_Command", new StringBody
+    this.formMap.put("Batch_Command", new StringBody
 			    ("skr", "text/plain", Charset.forName( "UTF-8" )));
     if(withValidation)
-      this.formEntity.addPart("RUN_PROG", new StringBody
+      this.formMap.put("RUN_PROG", new StringBody
 			      ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" ))); // GENERIC_V w/ validation
     else
-      this.formEntity.addPart("RUN_PROG", new StringBody
+      this.formMap.put("RUN_PROG", new StringBody
 			      ("GENERIC", "text/plain", Charset.forName( "UTF-8" ))); // no validation
     } catch (UnsupportedEncodingException  e) {
       throw new RuntimeException(e);
@@ -192,8 +195,9 @@ public class GenericObject
 			    new String(this.pa.getPassword()), service);
 	this.ticketTimeStamp = Calendar.getInstance();
       }
+      MultipartEntity formEntity = PostUtils.buildMultipartEntity( this.formMap );
       HttpPost post = new HttpPost(this.service + "?ticket=" + this.serviceTicket);
-      post.setEntity(this.formEntity);
+      post.setEntity(formEntity);
       System.out.println("post request: " + post.getRequestLine() );
 
       HttpResponse response = client.execute(post);
@@ -201,7 +205,7 @@ public class GenericObject
 	System.out.println("PAGE :" + EntityUtils.toString(response.getEntity()));
 	// ignore 302 redirect and resubmit request with ticket.
 	post = new HttpPost(this.service + "?ticket=" + this.serviceTicket);
-	post.setEntity(this.formEntity);
+	post.setEntity(formEntity);
 	System.out.println("post request: " + post.getRequestLine() );
 	response = client.execute(post);
 	HttpEntity respEntity = response.getEntity();
@@ -301,10 +305,10 @@ public class GenericObject
     // is transmitted in the http request.  All other information is
     // discarded.  
     // try {
-    //   this.formEntity.addPart("Batch_Command", new StringBody
+    //   this.formMap.put("Batch_Command", new StringBody
     //   			      ("", "text/plain", Charset.forName( "UTF-8" )));
       
-    //   this.formEntity.addPart("Batch_Env", new StringBody
+    //   this.formMap.put("Batch_Env", new StringBody
     //   			      ("", "text/plain", Charset.forName( "UTF-8" )));
     // } catch (UnsupportedEncodingException  e) {
     //   throw new RuntimeException(e);
@@ -324,7 +328,7 @@ public class GenericObject
   public void setField(String fieldName, String fieldValue)
   {
     try {
-      this.formEntity.addPart(fieldName, new StringBody
+      this.formMap.put(fieldName, new StringBody
 			      (fieldValue, "text/plain", Charset.forName( "UTF-8" )));
     } catch (UnsupportedEncodingException  e) {
       throw new RuntimeException(e);
@@ -344,7 +348,7 @@ public class GenericObject
   public void setField(String fieldName, boolean fieldState)
   {
     try {
-      this.formEntity.addPart(fieldName, new StringBody
+      this.formMap.put(fieldName, new StringBody
 			      (Boolean.toString(fieldState), "text/plain", Charset.forName( "UTF-8" )));
     } catch (UnsupportedEncodingException  e) {
       throw new RuntimeException(e);
@@ -358,7 +362,7 @@ public class GenericObject
   public void setFileField(String fieldName, String localFilename)
   {
     File paramValue = new File(localFilename);
-    this.formEntity.addPart(fieldName, new FileBody( paramValue, "text/html" ));
+    this.formMap.put(fieldName, new FileBody( paramValue, "text/html" ));
   } // setFileField
 
   // ************************************************************************

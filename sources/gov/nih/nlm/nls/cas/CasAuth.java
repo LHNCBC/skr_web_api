@@ -22,7 +22,12 @@ import org.apache.http.params.BasicHttpParams;
 /**
  * An example Java client to authenticate against CAS using REST services.
  * Please ensure you have followed the necessary setup found on the <a
- * href="http://www.ja-sig.org/wiki/display/CASUM/RESTful+API">wiki</a>.
+ * href="http://www.ja-sig.org/wiki/display/CASUM/RESTful+API">JASIG wiki</a>.
+ *
+ * <pre>
+ * ticket = getTicket(casserverurl, username, password, serviceurl);
+ * String String document = getProtectedDocument(serviceurl, ticket);
+ * </pre>
  *
  * @author <a href="mailto:jieryn@gmail.com">jesse lauren farinacci</a>
  * @since 3.4.2
@@ -46,7 +51,7 @@ public final class CasAuth
    * @return authentication ticket for service.
    */
   public static String getTicket(final String server, final String username,
-				       final String password, final String service)
+				 final String password, final String service)
   {
     notNull(server, "server must not be null");
     notNull(username, "username must not be null");
@@ -132,9 +137,9 @@ public final class CasAuth
    * @param username client user name 
    * @param password client password
    * @return a Proxy Granting Ticket.
-  */
+   */
   private static String getTicketGrantingTicket(final String server,
-						      final String username, final String password)
+						final String username, final String password)
   {
     final HttpClient client = new DefaultHttpClient();
 
@@ -170,7 +175,7 @@ public final class CasAuth
   /**
    * Request for protected document using service ticket.
    * <pre>
-   *    GET <resource url>?ticket=<service ticket> HTTP/1.0
+   *    GET &lt;resource url>?ticket=<service ticket> HTTP/1.0
    * </pre>
    * example:
    * <pre>
