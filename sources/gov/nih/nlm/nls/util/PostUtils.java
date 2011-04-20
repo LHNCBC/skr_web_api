@@ -30,6 +30,13 @@ public class PostUtils {
    */
   public PostUtils() { }
 
+
+  /**
+   * Build a multipart form entity from supplied entity map.
+   *
+   * @param elementMap dictionary of form elements.
+   * @return multipart form entity 
+   */
   public static MultipartEntity buildMultipartEntity( Map<String,ContentBody> elementMap ) {
     MultipartEntity formEntity = new MultipartEntity( HttpMultipartMode.BROWSER_COMPATIBLE );
     for (Map.Entry<String,ContentBody> entry: elementMap.entrySet()) {
@@ -37,6 +44,14 @@ public class PostUtils {
     }
     return formEntity;
   }
+
+  /**
+   * Build a multipart form entity from supplied entity map.
+   *
+   * @param elementMap dictionary of form elements.
+   * @param mode mode of multipart form entity to be constructed.
+   * @return multipart form entity 
+   */
   public static MultipartEntity buildMultipartEntity( Map<String,ContentBody> elementMap,
 						      HttpMultipartMode mode )
   {
@@ -46,6 +61,13 @@ public class PostUtils {
     }
     return formEntity;
   }
+
+  /**
+   * Build a JSON entity from supplied entity map.
+   *
+   * @param elementMap dictionary of form elements.
+   * @return JSON entity.
+   */
   public static String buildJSONEntity( Map<String,ContentBody> elementMap ) 
   {
     JSONObject jsonObj = new JSONObject();
@@ -84,8 +106,14 @@ public class PostUtils {
       throw new RuntimeException(e);
     }
     return jsonObj.toString();
-
   }
+
+  /**
+   * Build a XML entity from supplied entity map. (not implemented).
+   *
+   * @param elementMap dictionary of form elements.
+   * @return XML entity.
+   */
   public static String buildXMLEntity( Map<String,ContentBody> elementMap ) {
     return null;
   }

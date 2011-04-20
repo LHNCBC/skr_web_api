@@ -26,7 +26,6 @@ import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.util.EntityUtils;
 
-
 import gov.nih.nlm.nls.util.Authenticator;
 import gov.nih.nlm.nls.util.PostUtils;
 import gov.nih.nlm.nls.cas.CasAuth;
@@ -94,6 +93,7 @@ public class GenericObject
 
   // ************************************************************************
 
+  /** default constructor */
   public GenericObject() {
     this.promptCredentials();
     this.pa = this.authenticator.getPasswordAuthentication();
@@ -142,6 +142,7 @@ public class GenericObject
 
   // ************************************************************************
 
+  /** Prompt user for username/password. */
   void promptCredentials() {
     try {
       Class authenticatorClass = Class.forName(this.authenticatorClassName);
@@ -159,6 +160,12 @@ public class GenericObject
     }
   }
 
+  /**
+   * Print content of entity.
+   *
+   * @param respEntity http response entity
+   * @return string containing content of entity.
+   */
   String printEntity(HttpEntity respEntity)
     throws IOException
   {
@@ -182,8 +189,9 @@ public class GenericObject
    * Control the Batch job submission after validating command.
    * handleSubmission checks to make sure the command being run is valid and
    * then calls the JobObj routine to do the actual handling of the job.
+   *
+   * @return string containing content of server response.
    */
-
   public String handleSubmission()
   {
     HttpClient client = new DefaultHttpClient();
@@ -210,25 +218,32 @@ public class GenericObject
 	response = client.execute(post);
 	HttpEntity respEntity = response.getEntity();
 	if (respEntity != null) {
-	  String page = EntityUtils.toString(respEntity);
-	  System.out.println("PAGE :" + page);
-	  System.out.println("response status code: " + response.getStatusLine().getStatusCode());
-	  System.out.println("response content type: " + respEntity.getContentType());
-	  System.out.println("response content length: " + respEntity.getContentLength());
-	  printEntity(respEntity);
-	  return page;
+	  StringBuffer rtn = new StringBuffer();
+	  BufferedReader in = new BufferedReader(new InputStreamReader(respEntity.getContent()));
+          String line = "";
+          while((line = in.readLine()) != null)
+          {
+	    if(!line.startsWith("NOT DONE LOOP")) {
+	      rtn.append(line);
+	      rtn.append("\n");
+	    } // fi
+	  }
+	  return rtn.toString();
 	}
       } else {
 	HttpEntity respEntity = response.getEntity();
 	if (respEntity != null) {
-	  String page = EntityUtils.toString(respEntity);
-	  System.out.println("PAGE :" + page);
-	  System.out.println("response status code: " + response.getStatusLine().getStatusCode());
-	  System.out.println("response content type: " + respEntity.getContentType());
-	  System.out.println("response content length: " + respEntity.getContentLength());
-	  printEntity(respEntity);
-
-	  return page;
+	  StringBuffer rtn = new StringBuffer();
+	  BufferedReader in = new BufferedReader(new InputStreamReader(respEntity.getContent()));
+          String line = "";
+          while((line = in.readLine()) != null)
+          {
+	    if(!line.startsWith("NOT DONE LOOP")) {
+	      rtn.append(line);
+	      rtn.append("\n");
+	    } // fi
+	  }
+	  return rtn.toString();
 	}
       }
     } catch (java.io.UnsupportedEncodingException e) {
@@ -257,7 +272,6 @@ public class GenericObject
    *
    * @return   boolean determination of whether command is valid or not
    */
-
   private boolean validBatchCommand()
   {
     //    NameValuePair CommandPair = this.formEntity.get("Batch_Command");
@@ -304,23 +318,21 @@ public class GenericObject
     // multipart/form-data only field name and field value information
     // is transmitted in the http request.  All other information is
     // discarded.  
-    // try {
-    //   this.formMap.put("Batch_Command", new StringBody
-    //   			      ("", "text/plain", Charset.forName( "UTF-8" )));
+    try {
+      this.formMap.put("Batch_Command", new StringBody
+		       ("", "text/plain", Charset.forName( "UTF-8" )));
       
-    //   this.formMap.put("Batch_Env", new StringBody
-    //   			      ("", "text/plain", Charset.forName( "UTF-8" )));
-    // } catch (UnsupportedEncodingException  e) {
-    //   throw new RuntimeException(e);
-    // }
+      this.formMap.put("Batch_Env", new StringBody
+		       ("", "text/plain", Charset.forName( "UTF-8" )));
+    } catch (UnsupportedEncodingException  e) {
+      throw new RuntimeException(e);
+    }
   } // initFields
 
   // ************************************************************************
 
   /**
    * Set the stringFieldValue of the requested field/option for this job.
-   * This is basically a pass through entity with a call to the JobObj
-   * routine.
    *
    * @param  fieldName   Name of the field to be updated
    * @param  fieldValue  New String value for the field
@@ -339,8 +351,6 @@ public class GenericObject
 
   /**
    * Set the booleanFieldValue of the requested field/option for this job.
-   * This is basically a pass through entity with a call to the JobObj
-   * routine.
    *
    * @param  fieldName    Name of the field to be updated
    * @param  fieldState  New String value for the field
@@ -358,11 +368,16 @@ public class GenericObject
 
   // ************************************************************************
 
-
+  /**
+   * Set file field of the requested field/option for this job.
+   *
+   * @param  fieldName     Name of the field to be updated
+   * @param  localFilename Name of file to add to POST request
+   */
   public void setFileField(String fieldName, String localFilename)
   {
-    File paramValue = new File(localFilename);
-    this.formMap.put(fieldName, new FileBody( paramValue, "text/html" ));
+    File localFile = new File(localFilename);
+    this.formMap.put(fieldName, new FileBody( localFile, "text/html" ));
   } // setFileField
 
   // ************************************************************************
