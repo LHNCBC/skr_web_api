@@ -51,10 +51,23 @@
 
 
 import java.io.*;
+import java.util.List;
+import java.util.ArrayList;
 import gov.nih.nlm.nls.skr.*;
 
-public class GenericBatch
+public class GenericBatchNew
 {
+
+ /** print information about server options */
+  public static void printHelp() {
+    System.out.println("usage: GenericBatchNew [options] [inputFilename]");
+    System.out.println("  allowed options: ");
+    System.out.println("    --email <address> : set email address.");
+    System.out.println("    --command <name> : batch command: metamap, semrep, etc.");
+    System.out.println("    --note <notes> : batch notes ");
+    System.out.println("    --silent : don't send email after job completes.");
+  }
+
    public static void main(String args[])
    {
         GenericObject myGenericObj = new GenericObject();
@@ -67,7 +80,40 @@ public class GenericBatch
         myGenericObj.setField("Batch_Command", "metamap -% format -E");
         myGenericObj.setField("BatchNotes", "SKR API test");
         myGenericObj.setField("silentEmail", false);
+	
+	StringBuffer inputBuf = new StringBuffer();
+	List<String> options = new ArrayList<String>();
 
+	int i = 0; 
+	while (i < args.length) {
+	  if (args[i].charAt(0) == '-') {
+	    if (args[i].equals("-h") || args[i].equals("--help") || args[i].equals("-?")) {
+	      printHelp();
+	      System.exit(0);
+	    } else if ( args[i].equals("--email-address") || args[i].equals("--email")) {
+	      i++;
+	      myGenericObj.setField("Email_Address", args[i]);
+	    } else if ( args[i].equals("--command") || args[i].equals("--batch-command")) {
+	      i++;
+	      myGenericObj.setField("Batch_Command", args[i]);
+	    } else if ( args[i].equals("--note") || args[i].equals("--batch-note")) {
+	      i++;
+	      myGenericObj.setField("BatchNotes", args[i]);
+	    } else if ( args[i].equals("--silent") || args[i].equals("--silent-email")) {
+	      myGenericObj.setField("silentEmail", true);
+	    } 
+	  } else {
+	    inputBuf.append(args[i]).append(" "); 
+	  }
+	  i++;
+	}
+
+	if (inputBuf.length() > 0) {
+	  File inFile = new File(inputBuf.toString().trim()); 
+	  if (inFile.exists()) {
+	    myGenericObj.setFileField("UpLoad_File", inputBuf.toString().trim());
+	  }
+	}
         // Submit the job request
 
         try
