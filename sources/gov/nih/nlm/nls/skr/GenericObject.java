@@ -61,18 +61,18 @@ import gov.nih.nlm.nls.cas.CasAuth;
 
 public class GenericObject
 {
-  /** url of cas authentication server */
+  /** url of cas authentication server, property: skrapi.cas.serverurl */
   public final String casAuthServer =
     System.getProperty("skrapi.cas.serverurl",
 		       "https://utslogin.nlm.nih.gov/cas/v1/tickets");
-  /** url of skr api service */
+  /** url of skr api service, property:  skrapi.serviceurl*/
   public final String service =
     System.getProperty("skrapi.serviceurl",
 		       "http://skr.nlm.nih.gov/cgi-bin/SKR/Restricted_CAS/API_batchValidationII.pl");
   // public String service = "http://indlx1.nlm.nih.gov:8000/perl/batch_validation.pl";
   /** cas service ticket */
   private String serviceTicket = "";
-  /** authenticator class name, property: nls.form.authenticator,
+  /** authenticator class name, property: nls.service.authenticator,
    * default get username and password from console : @see gov.nih.nls.util.ConsoleAuthImpl
    * see also java.net.Authenticator and java.net.PasswordAuthentication
    */
@@ -85,7 +85,8 @@ public class GenericObject
   /** service ticket timestamp, when ticket was acquired. */
   private Calendar ticketTimeStamp = Calendar.getInstance();
   /** service ticket timeout: default 8 minutes */
-  public final static int ticketTimeout = Integer.parseInt(System.getProperty("skrapi.cas.ticket.timeout", "480000"));
+  public final static int ticketTimeout =
+    Integer.parseInt(System.getProperty("skrapi.cas.ticket.timeout", "480000"));
   /** storage for form elements */
   Map<String,ContentBody> formMap = new HashMap<String,ContentBody>();
   // MultipartEntity formEntity = new MultipartEntity( HttpMultipartMode.BROWSER_COMPATIBLE );
@@ -103,9 +104,9 @@ public class GenericObject
     this.initFields();
     try {
       this.formMap.put("RUN_PROG", new StringBody
-			      ("GENERIC", "text/plain", Charset.forName( "UTF-8" ))); // no validation
+		       ("GENERIC", "text/plain", Charset.forName( "UTF-8" ))); // no validation
       this.formMap.put("Batch_Command", new StringBody
-			      ("skr", "text/plain", Charset.forName( "UTF-8" )));
+		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
     } catch (UnsupportedEncodingException  e) {
       throw new RuntimeException(e);
     }
@@ -127,14 +128,14 @@ public class GenericObject
     this.ticketTimeStamp = Calendar.getInstance();
     this.initFields();
     try {
-    this.formMap.put("Batch_Command", new StringBody
-			    ("skr", "text/plain", Charset.forName( "UTF-8" )));
-    if(withValidation)
-      this.formMap.put("RUN_PROG", new StringBody
-			      ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" ))); // GENERIC_V w/ validation
-    else
-      this.formMap.put("RUN_PROG", new StringBody
-			      ("GENERIC", "text/plain", Charset.forName( "UTF-8" ))); // no validation
+      this.formMap.put("Batch_Command", new StringBody
+		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
+      if(withValidation)
+	this.formMap.put("RUN_PROG", new StringBody
+			 ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" ))); // GENERIC_V w/ validation
+      else
+	this.formMap.put("RUN_PROG", new StringBody
+			 ("GENERIC", "text/plain", Charset.forName( "UTF-8" ))); // no validation
     } catch (UnsupportedEncodingException  e) {
       throw new RuntimeException(e);
     }
@@ -177,10 +178,52 @@ public class GenericObject
 	sb.append(line).append('\n');
       }
       br.close();
-      System.out.println("response content: " + sb.toString());
+      System.out.print("response content: " + sb.toString());
       return sb.toString();
     } 
     return null;
+  }
+
+  /**
+   * Determine if email entry of form has a well formed email address.
+   * @parm addressBody content of email entry of form.
+   * @return true if email is well formed.
+   */
+  public boolean emailIsWellFormed(ContentBody addressBody) {
+    if (addressBody != null)
+      if (addressBody instanceof StringBody) {
+	if (((StringBody)addressBody).getContentLength() == 0) {
+	  return false;
+	} else {
+	  try {
+	    StringBuilder sb = new StringBuilder();
+	    BufferedReader reader =
+	      new BufferedReader(((StringBody)addressBody).getReader());
+	    String line;
+	    while ((line = reader.readLine()) != null) {
+	      sb.append(line);
+	    }
+	    reader.close();
+	    String address = sb.toString();
+	    if (address.indexOf("@",1) == -1) { return false; }
+	    return true;
+	  } catch (IOException e) {
+	    System.err.println("problems reading address string body");
+	    e.printStackTrace();
+	    throw new RuntimeException(e);
+	  }
+	}
+      }
+    return false;
+  }
+
+  /**
+   * Determine if email entry of form is valid.
+   * @return true if email is valid.
+   */
+  public boolean validEmail() {
+    return this.formMap.containsKey("Email_Address") &&
+      this.emailIsWellFormed(this.formMap.get("Email_Address"));
   }
 
   // ************************************************************************
@@ -196,6 +239,7 @@ public class GenericObject
   {
     HttpClient client = new DefaultHttpClient();
     try {
+      // check service ticket age
       if (Calendar.getInstance().compareTo(this.ticketTimeStamp) > ticketTimeout) {
 	// get a new ticket and reset timestamp
 	this.serviceTicket =
@@ -203,48 +247,53 @@ public class GenericObject
 			    new String(this.pa.getPassword()), service);
 	this.ticketTimeStamp = Calendar.getInstance();
       }
-      MultipartEntity formEntity = PostUtils.buildMultipartEntity( this.formMap );
-      HttpPost post = new HttpPost(this.service + "?ticket=" + this.serviceTicket);
-      post.setEntity(formEntity);
-      System.out.println("post request: " + post.getRequestLine() );
-
-      HttpResponse response = client.execute(post);
-      if (response.getStatusLine().getStatusCode() == 302) {
-	System.out.println("PAGE :" + EntityUtils.toString(response.getEntity()));
-	// ignore 302 redirect and resubmit request with ticket.
-	post = new HttpPost(this.service + "?ticket=" + this.serviceTicket);
+      if (this.validEmail()) {
+	MultipartEntity formEntity = PostUtils.buildMultipartEntity( this.formMap );
+	HttpPost post = new HttpPost(this.service + "?ticket=" + this.serviceTicket);
 	post.setEntity(formEntity);
-	System.out.println("post request: " + post.getRequestLine() );
-	response = client.execute(post);
-	HttpEntity respEntity = response.getEntity();
-	if (respEntity != null) {
-	  StringBuffer rtn = new StringBuffer();
-	  BufferedReader in = new BufferedReader(new InputStreamReader(respEntity.getContent()));
-          String line = "";
-          while((line = in.readLine()) != null)
-          {
-	    if(!line.startsWith("NOT DONE LOOP")) {
-	      rtn.append(line);
-	      rtn.append("\n");
-	    } // fi
+	// System.out.println("post request: " + post.getRequestLine() );
+	HttpResponse response = client.execute(post);
+	if (response.getStatusLine().getStatusCode() == 302) {
+	  // System.out.println("PAGE :" + EntityUtils.toString(response.getEntity()));
+	  EntityUtils.consume(response.getEntity()); // consume response input to release connection.
+	  // ignore 302 redirect and resubmit request with ticket.
+	  post = new HttpPost(this.service + "?ticket=" + this.serviceTicket);
+	  post.setEntity(formEntity);
+	  // System.out.println("post request: " + post.getRequestLine() );
+	  response = client.execute(post);
+	  HttpEntity respEntity = response.getEntity();
+	  if (respEntity != null) {
+	    StringBuffer rtn = new StringBuffer();
+	    BufferedReader in = new BufferedReader(new InputStreamReader(respEntity.getContent()));
+	    String line = "";
+	    while((line = in.readLine()) != null)
+	      {
+		if(!line.startsWith("NOT DONE LOOP")) {
+		  rtn.append(line);
+		  rtn.append("\n");
+		} // fi
+	      }
+	    return rtn.toString();
 	  }
-	  return rtn.toString();
+	} else {
+	  HttpEntity respEntity = response.getEntity();
+	  if (respEntity != null) {
+	    StringBuffer rtn = new StringBuffer();
+	    BufferedReader in = new BufferedReader(new InputStreamReader(respEntity.getContent()));
+	    String line = "";
+	    while((line = in.readLine()) != null)
+	      {
+		if(!line.startsWith("NOT DONE LOOP")) {
+		  rtn.append(line);
+		  rtn.append("\n");
+		} // fi
+	      }
+	    return rtn.toString();
+	  }
 	}
       } else {
-	HttpEntity respEntity = response.getEntity();
-	if (respEntity != null) {
-	  StringBuffer rtn = new StringBuffer();
-	  BufferedReader in = new BufferedReader(new InputStreamReader(respEntity.getContent()));
-          String line = "";
-          while((line = in.readLine()) != null)
-          {
-	    if(!line.startsWith("NOT DONE LOOP")) {
-	      rtn.append(line);
-	      rtn.append("\n");
-	    } // fi
-	  }
-	  return rtn.toString();
-	}
+	System.err.println("Error: Email Address must be specified");
+	throw new RuntimeException();
       }
     } catch (java.io.UnsupportedEncodingException e) {
       //LOG.warning(e.getMessage());
@@ -341,7 +390,7 @@ public class GenericObject
   {
     try {
       this.formMap.put(fieldName, new StringBody
-			      (fieldValue, "text/plain", Charset.forName( "UTF-8" )));
+		       (fieldValue, "text/plain", Charset.forName( "UTF-8" )));
     } catch (UnsupportedEncodingException  e) {
       throw new RuntimeException(e);
     }
@@ -359,7 +408,7 @@ public class GenericObject
   {
     try {
       this.formMap.put(fieldName, new StringBody
-			      (Boolean.toString(fieldState), "text/plain", Charset.forName( "UTF-8" )));
+		       (Boolean.toString(fieldState), "text/plain", Charset.forName( "UTF-8" )));
     } catch (UnsupportedEncodingException  e) {
       throw new RuntimeException(e);
     }
@@ -380,33 +429,4 @@ public class GenericObject
     this.formMap.put(fieldName, new FileBody( localFile, "text/html" ));
   } // setFileField
 
-  // ************************************************************************
-
-  /**
-   * Interprets the command line arguments/options.
-   * This is basically a pass through entity with a call to the JobObj
-   * routine.
-   *
-   * @param   allArgs String containing all of the command line arguments
-   */
-
-  // public void setArgs(String allArgs)
-  // {
-  //   this.genericBatchForm.setArgs(allArgs);
-  // } // setArgs
-
-  // ************************************************************************
-
-  /**
-   * Interprets the command line arguments/options.
-   * This is basically a pass through entity with a call to the JobObj
-   * routine.
-   *
-   * @param   args  Array of command line arguments
-   */
-
-  // public void setArgs(String args[])
-  // {
-  //   this.genericBatchForm.setArgs(args);
-  // } // setArgs
 } // class GenericObject

@@ -31,6 +31,7 @@ import org.apache.http.params.BasicHttpParams;
  *
  * @author <a href="mailto:jieryn@gmail.com">jesse lauren farinacci</a>
  * @since 3.4.2
+ * updated to use HTTP component library (http://hc.apache.org/) by Willie Rogers.
  */
 public final class CasAuth
 {
@@ -103,7 +104,7 @@ public final class CasAuth
       // Create a response handler
       ResponseHandler<String> responseHandler = new BasicResponseHandler();
       String responseBody = client.execute(post, responseHandler);
-      System.out.println("response: " + responseBody);
+      // System.out.println("response: " + responseBody);
       return responseBody;
     } catch (final   java.io.UnsupportedEncodingException  e) {
       LOG.warning(e.getMessage());
@@ -153,12 +154,12 @@ public final class CasAuth
 
       ResponseHandler<String> responseHandler = new BasicResponseHandler();
       String response = client.execute(post, responseHandler);
-      System.out.println("response: " + response);
+      // System.out.println("response: " + response);
       final Matcher matcher = Pattern.compile(".*action=\".*/(.*?)\".*")
 	.matcher(response);
       
       if (matcher.matches()) {
-	System.out.println("ticket: " +  matcher.group(1));
+	// System.out.println("ticket: " +  matcher.group(1));
 	return matcher.group(1);
       }
     } catch (final   java.io.UnsupportedEncodingException  e) {

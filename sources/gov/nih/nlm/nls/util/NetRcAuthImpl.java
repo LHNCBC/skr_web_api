@@ -83,7 +83,7 @@ public class NetRcAuthImpl extends Authenticator {
     String line = null;
     while ((line = reader.readLine()) != null) {
       List tokens = this.split(line, "| \t\n\r\f");
-      System.out.println("no of tokens: " + tokens.size());
+      // System.out.println("no of tokens: " + tokens.size());
       if (((String)tokens.get(1)).equals(machinename)) {
 	this.username = (String)tokens.get(3);
 	this.password = ((String)tokens.get(5)).toCharArray();
