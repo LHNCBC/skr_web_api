@@ -1,0 +1,227 @@
+*Title: SKR API Readme 
+
+*TOC
+
+* Prerequisites:
+
+	* To access either the Interactive Mode or Batch Mode
+          facilities, you MUST have access to a UMLSKS account. For
+          more information about how we use UMLSKS authentication
+          data, or for information on how to set up a UMLSKS account,
+          please select the Info icon to the right which will take you
+          to the SKR web site: Information Mark Symbol: Help about
+          UMLSKS accounts
+
+	* A running version of Java. Information Mark Symbol: Help
+          about Java We have tested and confirmed that the SKR API
+          program compiles and runs under the following versions of
+          Java: 1.6.0
+
+	* We have tested and confirmed that the SKR API program runs
+          on the following operating systems: Linux Mac OS/X Microsoft
+          Windows XP
+
+	* Apache's Jakarta Project Ant program is required if you wish
+	  to modify and/or compile the SKR API source code using the
+	  existing build file: 1.6 or better Information Mark Symbol:
+	  Help about Ant
+
+	* Your data in a recognized format. Please see the Supported
+          File Formats section of the SKR Help Information web page
+          for detailed information and examples of valid input
+          formats.
+
+
+* Introduction
+
+The Semantic Knowledge Representation (SKR) Project was initiated at
+NLM in order to develop programs to provide usable semantic
+representation of biomedical free text by building on resources
+currently available at the library.
+
+The SKR project is concerned with reliable and effective management of
+the information encoded in natural language texts. The project
+develops programs that provide usable semantic representation of
+biomedical text by building on resources currently available at the
+Library, especially the UMLS knowledge sources and the natural
+language processing tools provided by the SPECIALIST system. Two
+programs in particular, MetaMap/SKR and SemRep, are being evaluated
+and enhanced and applied to a variety of problems in the management of
+biomedical information. These include automatic indexing of MEDLINE
+citations, concept-based query expansion, analysis of complex
+Metathesaurus strings, accurate identification of the terminology and
+relationships in anatomical documents, and the extraction of chemical
+binding relations from biomedical text.
+
+This Java-based API to the SKR Scheduler facility was created to
+provide users with the ability to programmatically submit jobs to the
+Scheduler Batch and Interactive facilities instead of using the
+web-based interfaces. We have tried to reproduce full functionality
+for all of the programs under the SKR Scheduler umbrella.
+
+
+* Overview of What Happens:
+
+The SKR API has been designed to allow you to interact with our web-based Scheduler using either our Batch or Interactive facilities.
+
+	* Batch Jobs have three main phases:
+
+		1. Request is made for a new batch job and the SKR API
+		   submits the job.
+		2. Program waits for job to finish. This is done by
+		   monitoring the Scheduler queue to see when the job
+		   exits the queue. The program sleeps for 10 seconds
+		   after each check of the queue so that it doesn't
+		   become a nuisance process.
+		3. Once the job has left the Scheduler queue, the
+		   program then checks to see if the "text.out.done"
+		   file exists in the job result directory. If it
+		   does, then the results file "text.out" is returned
+		   as a String to the calling method. If the
+		   "text.out.done" file doesn't exist, an error has
+		   occurred and the program exits.
+
+
+	* Interactive Jobs only have two main phases:
+
+		1. Request is made for a new interactive job and the SKR API submits the job.
+		2. Program waits for job to finish and returns the
+		   result as a String to the calling
+		   method. Interactive jobs don't really enter the
+		   Scheduler - they are run from the command line. The
+		   API simply waits for the command to return a result
+		   without having to worry about the Scheduler queue,
+		   etc., providing the fastest mechanism for receiving
+		   results.
+		3. _Note:_ Interactive jobs will only accept a single
+		   item to process - anything larger will cause an error.
+
+
+* Example Programs:
+
+There are several example files included to show the various ways to
+access the SKR Scheduler routines. These are all located in the
+Examples directory.  
+
+
+* How to Compile and Run:
+
+	* To compile the jar file - from the top-level directory run "ant jar".
+	* To compile any of the examples, you can run:
+		javac -classpath ../lib/skrAPI.jar SKR_Batch.java
+	*    To run any of the examples, run the following command from the Examples directory:
+		java -cp .:../lib/skrAPI.jar SKRBatch 
+
+
+* Programming Notes: 
+
+
+** Fields
+
+	!           _Required Fields_              !
+	!----------------!----------------!--------!
+	!  Description   !   Field Name   !  Type  !
+	!----------------!----------------!--------!
+	! Email Address  ! Email_Address  ! String !
+	! File to Upload ! UpLoad_File    ! String !
+	!----------------!----------------!--------!
+
+
+	!                     _Optional Fields_                     !
+	!----------------------------------!--------------!---------!
+	! Description                      !  Field Name  !  Type   !
+	!----------------------------------!--------------!---------!
+	! Silent on Errors                 !   ESilent    ! Boolean !
+	! Single Line Delimited Input      !  SingLine    ! Boolean !
+	! Single Line Delimited Input w/ID ! SingLinePMID ! Boolean !
+	! Request Run Priority Level       ! RPriority    ! String  !
+	! No Completion Email              ! SilentEmail  ! Boolean !
+	!----------------------------------!--------------!---------!
+
+
+** General Requirements
+
+	* You "should" catch "RuntimeException" exceptions in your
+          program since this is what the SKR API throws internally
+          when it encounters an error. See example below for try/catch
+          sample.
+
+	* You must specify an Email Address. This is used for logging
+          as well as notification when Batch jobs finish, or if there
+          are problems with a job.
+
+	* You must specify the UpLoad_File field.
+
+	* Valid Batch job priorities are "0", "1", or "2". Where "0"
+          represents Normal priority, "1" represents Medium, and "2"
+          represents High priority. Medium and High priorities are
+          reserved and you must have the proper permissions to use
+          them.
+
+	* At the moment, the Generic program is restricted to
+          Batch jobs.
+
+** Setting up a Basic SKR API program.
+
+The first thing you need to do is create a job object for the type of
+program you want to run:
+
+^<<
+GenericObject mySKRObj = new GenericObject();
+^>>
+
+This creates a job object for the SKR/MetaMap program. The same job
+object is used for either Interactive or Batch jobs.
+
+The next thing to do is setup any of the required or batch specific
+fields.
+^<<
+mySKRObj.setField("Email_Address", "yourEmailAddress");
+mySKRObj.setField("silentEmail", true);
+mySKRObj.setField("UpLoad_File", "./medlin25.txt");
+^>>
+
+This tells the job object what your email address is (required), tells
+the Scheduler that we don't want to be notified after the job
+completes (silentEmail), and that we want to use the local file
+"medlin25.txt" as the input data to be processed (UpLoad_File). This
+also tells us that we are going to be submitting a Batch job request
+since the "UpLoad_File" field is specified and that field is not
+allowed for Interactive jobs.
+
+
+Next we want to specify the program with the appropriate options:
+
+^<<
+mySKRObj.setField("Batch_Command", "metamap -% format -E");
+^>>
+
+Above we're running |metamap| with formatted XML with indication of
+when a citation ends.
+
+Now we are finally ready to actually submit the Batch job and receive
+our results back. We surround this submission code with a try/catch
+for any "RuntimeException" exceptions that might be thrown back to us
+from the SKR API program.
+
+^<<
+try
+{
+   String results = mySKRObj.handleSubmission();
+   System.out.print(results);
+} catch (RuntimeException ex) {
+   System.err.println("");
+   System.err.print("An ERROR has occurred while processing your");
+   System.err.println(" request, please review any");
+   System.err.print("lines beginning with \"Error:\" above and the");
+   System.err.println(" trace below for indications of");
+   System.err.println("what may have gone wrong.");
+   System.err.println("");
+   System.err.println("Trace:");
+   ex.printStackTrace();
+} // catch
+^>>
+
+This calls the |GenericObject| instance method that takes care of the
+job from submission, monitoring, cleaning up, and returning a result.
+
