@@ -70,6 +70,11 @@ public class GenericBatchNew
 
    public static void main(String args[])
    {
+     if (args.length < 1) {
+       printHelp();
+       System.exit(1);
+     }
+
         GenericObject myGenericObj = new GenericObject();
 
         // NOTE: You MUST specify an email address because it is used for
@@ -133,4 +138,4 @@ public class GenericBatchNew
            ex.printStackTrace();
         } // catch
    } // main
-} // class GenericBatch
+} // class GenericBatchNew
