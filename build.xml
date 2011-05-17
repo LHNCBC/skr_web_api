@@ -14,20 +14,18 @@
        =================================================================== 
    -->
 
-  <property name="project"         value="."/>
-  <property name="project.src"     value="${project}/sources"/>
-  <property name="project.examples"     value="${project}/examples"/>
-  <property name="project.classes" value="${project}/classes"/>
-  <property name="project.doc"     value="${project}/doc"/>
-  <property name="project.lib"     value="${project}/lib"/>
-  <property name="wsd.server"      value="/filer/wsd/Disambiguator/WSD_Server/lib"/>
-  <property name="thirdparty.jar"  value="${wsdserver.lib}/thirdparty.jar"/>
-  <property name="common-logging"  value="${project.lib}/commons-logging-1.1.1.jar"/>
-  <property name="httpclient"      value="${project.lib}/httpclient-4.1.1.jar"/>
-  <property name="httpclient.cache" value="${project.lib}/httpclient-cache-4.1.1.jar"/>
-  <property name="httpcore"        value="${project.lib}/httpcore-4.1.jar"/>
-  <property name="httpcore.nio"    value="${project.lib}/httpcore-nio-4.1.jar"/>
-  <property name="httpmime"        value="${project.lib}/httpmime-4.1.1.jar"/>
+  <property name="project"           value="."/>
+  <property name="project.src"       value="${project}/sources"/>
+  <property name="project.examples"  value="${project}/examples"/>
+  <property name="project.classes"   value="${project}/classes"/>
+  <property name="project.doc"       value="${project}/doc"/>
+  <property name="project.lib"       value="${project}/lib"/>
+  <property name="common-logging"    value="${project.lib}/commons-logging-1.1.1.jar"/>
+  <property name="httpclient"        value="${project.lib}/httpclient-4.1.1.jar"/>
+  <property name="httpclient.cache"  value="${project.lib}/httpclient-cache-4.1.1.jar"/>
+  <property name="httpcore"          value="${project.lib}/httpcore-4.1.jar"/>
+  <property name="httpcore.nio"      value="${project.lib}/httpcore-nio-4.1.jar"/>
+  <property name="httpmime"          value="${project.lib}/httpmime-4.1.1.jar"/>
 
   <!-- ======================== compile ========================= -->
   <target name="compile">  

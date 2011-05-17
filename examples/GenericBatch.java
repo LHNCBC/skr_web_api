@@ -57,14 +57,14 @@ public class GenericBatch
 {
    public static void main(String args[])
    {
-        GenericObject myGenericObj = new GenericObject();
+        GenericObject myGenericObj = new GenericObject(true);
 
         // NOTE: You MUST specify an email address because it is used for
         //       logging purposes.
 
         myGenericObj.setField("Email_Address", "youraddress@goeshere");
         myGenericObj.setFileField("UpLoad_File", "./sample.txt");
-        myGenericObj.setField("Batch_Command", "metamap -% format -E");
+        myGenericObj.setField("Batch_Command", "MTI -opt1_DCMS -E");
         myGenericObj.setField("BatchNotes", "SKR API test");
         myGenericObj.setField("silentEmail", false);
 

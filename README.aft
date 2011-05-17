@@ -4,13 +4,17 @@
 
 * Prerequisites:
 
-	* To access either the Interactive Mode or Batch Mode
-          facilities, you MUST have access to a UMLSKS account. For
-          more information about how we use UMLSKS authentication
-          data, or for information on how to set up a UMLSKS account,
-          please select the Info icon to the right which will take you
-          to the SKR web site: Information Mark Symbol: Help about
-          UMLSKS accounts
+	* To access either the the Interactive Mode or Batch Mode
+          facilities, you must have accepted the terms of the UMLS
+          Metathesaurus License Agreement
+          (https://uts.nlm.nih.gov/license.html), which requires you
+          to respect the copyrights of the constituent vocabularies
+          and to file a brief annual report on your use of the
+          UMLS. You also must have activated a UMLS Terminology
+          Services (UTS) account (https://uts.nlm.nih.gov/home.html).
+          See UTS Account Information page
+          (http://skr.nlm.nih.gov/Help/umlsks.shtml) for information
+          on how we use UTS authentication.
 
 	* A running version of Java. Information Mark Symbol: Help
           about Java We have tested and confirmed that the SKR API
@@ -99,19 +103,56 @@ The SKR API has been designed to allow you to interact with our web-based Schedu
 
 * Example Programs:
 
-There are several example files included to show the various ways to
+There are two example files included to show the various ways to
 access the SKR Scheduler routines. These are all located in the
 Examples directory.  
 
 
 * How to Compile and Run:
 
-	* To compile the jar file - from the top-level directory run "ant jar".
-	* To compile any of the examples, you can run:
-		javac -classpath ../lib/skrAPI.jar SKR_Batch.java
-	*    To run any of the examples, run the following command from the Examples directory:
-		java -cp .:../lib/skrAPI.jar SKRBatch 
+To compile the jar file and the examples from the top-level directory run "ant jar".
 
+To run one of the examples, run the one of the following commands from
+the Examples directory:
+
+^<<
+java -cp ../classes:../lib/skrAPI.jar:../lib/commons-logging-1.1.1.jar:\
+	../lib/httpclient-cache-4.1.1.jar:../lib/httpcore-nio-4.1.jar:\
+	../lib/httpclient-4.1.1.jar:../lib/httpcore-4.1.jar:\
+	../lib/httpmime-4.1.1.jar GenericBatch
+
+or:
+
+java -cp ../classes:../lib/skrAPI.jar:../lib/commons-logging-1.1.1.jar:\
+	../lib/httpclient-cache-4.1.1.jar:../lib/httpcore-nio-4.1.jar:\
+	../lib/httpclient-4.1.1.jar:../lib/httpcore-4.1.jar:\
+	../lib/httpmime-4.1.1.jar GenericBatchNew --email your@email filename
+^>>
+
+or use test.sh:
+^<<
+../test.sh GenericBatch
+
+or
+
+../test.sh GenericBatchNew --email your@email filename
+^>>
+
+The GenericBatchNew example allows you to enter any options and the
+inputfile on the command line.  The usage of the program and available
+options follow:
+
+^<<
+usage: GenericBatchNew [options] [inputFilename]
+  allowed options: 
+    --email <address> : set email address.
+    --command <name> : batch command: metamap, semrep, etc.
+    --note <notes> : batch notes 
+    --silent : don't send email after job completes.
+    --silent-errors : Silent on Errors
+    --singleLineInput : Single Line Delimited Input
+    --singleLinePMID : Single Line Delimited Input w/ID
+^>>
 
 * Programming Notes: 
 
@@ -167,7 +208,7 @@ The first thing you need to do is create a job object for the type of
 program you want to run:
 
 ^<<
-GenericObject mySKRObj = new GenericObject();
+GenericObject mySKRObj = new GenericObject(true);
 ^>>
 
 This creates a job object for the SKR/MetaMap program. The same job

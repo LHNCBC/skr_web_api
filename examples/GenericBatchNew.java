@@ -1,28 +1,28 @@
 /*
-===========================================================================
-*
-*                            PUBLIC DOMAIN NOTICE                          
-*               National Center for Biotechnology Information
-*         Lister Hill National Center for Biomedical Communications
-*                                                                          
-*  This software is a "United States Government Work" under the terms of the
-*  United States Copyright Act.  It was written as part of the authors' official
-*  duties as a United States Government contractor and thus cannot be
-*  copyrighted.  This software is freely available to the public for use. The
-*  National Library of Medicine and the U.S. Government have not placed any
-*  restriction on its use or reproduction.  
-*                                                                          
-*  Although all reasonable efforts have been taken to ensure the accuracy  
-*  and reliability of the software and data, the NLM and the U.S.          
-*  Government do not and cannot warrant the performance or results that    
-*  may be obtained by using this software or data. The NLM and the U.S.    
-*  Government disclaim all warranties, express or implied, including       
-*  warranties of performance, merchantability or fitness for any particular
-*  purpose.                                                                
-*                                                                          
-*  Please cite the authors in any work or product based on this material.   
-*
-===========================================================================
+  ===========================================================================
+  *
+  *                            PUBLIC DOMAIN NOTICE                          
+  *               National Center for Biotechnology Information
+  *         Lister Hill National Center for Biomedical Communications
+  *                                                                          
+  *  This software is a "United States Government Work" under the terms of the
+  *  United States Copyright Act.  It was written as part of the authors' official
+  *  duties as a United States Government contractor and thus cannot be
+  *  copyrighted.  This software is freely available to the public for use. The
+  *  National Library of Medicine and the U.S. Government have not placed any
+  *  restriction on its use or reproduction.  
+  *                                                                          
+  *  Although all reasonable efforts have been taken to ensure the accuracy  
+  *  and reliability of the software and data, the NLM and the U.S.          
+  *  Government do not and cannot warrant the performance or results that    
+  *  may be obtained by using this software or data. The NLM and the U.S.    
+  *  Government disclaim all warranties, express or implied, including       
+  *  warranties of performance, merchantability or fitness for any particular
+  *  purpose.                                                                
+  *                                                                          
+  *  Please cite the authors in any work or product based on this material.   
+  *
+  ===========================================================================
 */
 
 /**
@@ -47,7 +47,7 @@
  * 
  * @author	Jim Mork
  * @version	1.0, September 18, 2006
-**/
+ **/
 
 
 import java.io.*;
@@ -58,7 +58,7 @@ import gov.nih.nlm.nls.skr.*;
 public class GenericBatchNew
 {
 
- /** print information about server options */
+  /** print information about server options */
   public static void printHelp() {
     System.out.println("usage: GenericBatchNew [options] [inputFilename]");
     System.out.println("  allowed options: ");
@@ -66,76 +66,121 @@ public class GenericBatchNew
     System.out.println("    --command <name> : batch command: metamap, semrep, etc.");
     System.out.println("    --note <notes> : batch notes ");
     System.out.println("    --silent : don't send email after job completes.");
+    System.out.println("    --silent-errors : Silent on Errors");
+    System.out.println("    --singleLineInput : Single Line Delimited Input");
+    System.out.println("    --singleLinePMID : Single Line Delimited Input w/ID");
   }
 
-   public static void main(String args[])
-   {
-     if (args.length < 1) {
-       printHelp();
-       System.exit(1);
-     }
+  /**
+   * If supplied value string is null or empty then display usage
+   * message and exit program.
+   * @param value variable to be tested.
+   * @param msg error message to precede usage message.
+   */
+  static void fatalMessageIfEmptyString(String value, String msg) {
+    if (value != null) {
+      if (value.length() > 0) {
+	return;
+      } 
+    }
+    System.out.println(msg);
+    printHelp();
+    System.exit(1);
+  }
 
-        GenericObject myGenericObj = new GenericObject();
+  public static void main(String args[])
+  {
+    // NOTE: You MUST specify an email address because it is used for
+    //       logging purposes.
+    String emailAddress = null;
+    String batchCommand = "MTI -opt1_DCMS -E";
+    String batchNotes = "SKR API Test";
+    boolean silentEmail = false;
+    boolean silentOnErrors = false;
+    boolean singleLineDelimitedInput = false;
+    boolean singleLineDelimitedInputWithId = false;
 
-        // NOTE: You MUST specify an email address because it is used for
-        //       logging purposes.
+      if (args.length < 1) {
+	printHelp();
+	System.exit(1);
+      }
+    StringBuffer inputBuf = new StringBuffer();
+    List<String> options = new ArrayList<String>();
 
-        myGenericObj.setField("Email_Address", "youraddress@goeshere");
-        myGenericObj.setFileField("UpLoad_File", "./sample.txt");
-        myGenericObj.setField("Batch_Command", "metamap -% format -E");
-        myGenericObj.setField("BatchNotes", "SKR API test");
-        myGenericObj.setField("silentEmail", false);
-	
-	StringBuffer inputBuf = new StringBuffer();
-	List<String> options = new ArrayList<String>();
-
-	int i = 0; 
-	while (i < args.length) {
-	  if (args[i].charAt(0) == '-') {
-	    if (args[i].equals("-h") || args[i].equals("--help") || args[i].equals("-?")) {
-	      printHelp();
-	      System.exit(0);
-	    } else if ( args[i].equals("--email-address") || args[i].equals("--email")) {
-	      i++;
-	      myGenericObj.setField("Email_Address", args[i]);
-	    } else if ( args[i].equals("--command") || args[i].equals("--batch-command")) {
-	      i++;
-	      myGenericObj.setField("Batch_Command", args[i]);
-	    } else if ( args[i].equals("--note") || args[i].equals("--batch-note")) {
-	      i++;
-	      myGenericObj.setField("BatchNotes", args[i]);
-	    } else if ( args[i].equals("--silent") || args[i].equals("--silent-email")) {
-	      myGenericObj.setField("silentEmail", true);
-	    } 
-	  } else {
-	    inputBuf.append(args[i]).append(" "); 
-	  }
+    int i = 0; 
+    while (i < args.length) {
+      if (args[i].charAt(0) == '-') {
+	if (args[i].equals("-h") || args[i].equals("--help") || args[i].equals("-?")) {
+	  printHelp();
+	  System.exit(0);
+	} else if ( args[i].equals("--email-address") || args[i].equals("--email")) {
 	  i++;
-	}
+	  emailAddress = args[i];
+	} else if ( args[i].equals("--command") || args[i].equals("--batch-command")) {
+	  i++;
+	  batchCommand = args[i];
+	} else if ( args[i].equals("--note") || args[i].equals("--batch-note")) {
+	  i++;
+	  batchNotes = args[i];
+	} else if ( args[i].equals("--silent") || args[i].equals("--silent-email")) {
+	  silentEmail = true;
+	} else if ( args[i].equals("--silent-errors") || args[i].equals("--silent-on-errors")) {
+	  silentOnErrors = true;
+	} else if ( args[i].equals("--singleLineInput") || args[i].equals("--singleLineDelimitedInput")) {
+	   singleLineDelimitedInput = true;
+	} else if ( args[i].equals("--singleLinePMID") ||
+		    args[i].equals("--singleLineDelimitedInputWithPMID")) {
+	   singleLineDelimitedInput = true;
+	} 
 
-	if (inputBuf.length() > 0) {
-	  File inFile = new File(inputBuf.toString().trim()); 
-	  if (inFile.exists()) {
-	    myGenericObj.setFileField("UpLoad_File", inputBuf.toString().trim());
-	  }
-	}
-        // Submit the job request
+      } else {
+	inputBuf.append(args[i]).append(" "); 
+      }
+      i++;
+    }
+    // Instantiate the object for Generic Batch
+    GenericObject myGenericObj = new GenericObject(true);
+    fatalMessageIfEmptyString(emailAddress, "email address is required.");
+    myGenericObj.setField("Email_Address", emailAddress);
+    fatalMessageIfEmptyString(batchCommand, "command for batch processing is required.");
 
-        try
-        {
-           String results = myGenericObj.handleSubmission();
-           System.out.print(results);
+    myGenericObj.setField("Batch_Command", batchCommand);
+    if (batchNotes != null) {
+      myGenericObj.setField("BatchNotes", batchNotes);
+    }
+    myGenericObj.setField("silentEmail", silentEmail);
+    if (silentOnErrors) {
+      myGenericObj.setField("ESilent", silentOnErrors);
+    }
+    if (singleLineDelimitedInput) {
+      myGenericObj.setField("SingLine", singleLineDelimitedInput);
+    }
+    if (singleLineDelimitedInputWithId) {
+      myGenericObj.setField("SingLinePMID", singleLineDelimitedInputWithId);
+    }
 
-        } catch (RuntimeException ex) {
-           System.err.println("");
-           System.err.print("An ERROR has occurred while processing your");
-           System.err.println(" request, please review any");
-           System.err.print("lines beginning with \"Error:\" above and the");
-           System.err.println(" trace below for indications of");
-           System.err.println("what may have gone wrong.");
-           System.err.println("");
-           System.err.println("Trace:");
-           ex.printStackTrace();
-        } // catch
-   } // main
+    if (inputBuf.length() > 0) {
+      File inFile = new File(inputBuf.toString().trim()); 
+      if (inFile.exists()) {
+	myGenericObj.setFileField("UpLoad_File", inputBuf.toString().trim());
+      }
+    }
+    // Submit the job request
+    try
+      {
+	String results = myGenericObj.handleSubmission();
+	System.out.print(results);
+
+      } catch (RuntimeException ex) {
+      System.err.println("");
+      System.err.print("An ERROR has occurred while processing your");
+      System.err.println(" request, please review any");
+      System.err.print("lines beginning with \"Error:\" above and the");
+      System.err.println(" trace below for indications of");
+      System.err.println("what may have gone wrong.");
+      System.err.println("");
+      System.err.println("Trace:");
+      ex.printStackTrace();
+    } // catch
+  } // main
 } // class GenericBatchNew

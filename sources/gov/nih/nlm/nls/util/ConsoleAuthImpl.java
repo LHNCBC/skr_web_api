@@ -19,6 +19,10 @@ public class ConsoleAuthImpl extends Authenticator {
     try {
       username = Utils.getTextInput("Enter your Username: ");
       password = PasswordField.getPassword("Enter your password: ");
+      if (password == null) {
+	System.err.println("Error: Password string is empty!");
+	throw new RuntimeException("Error: Password string is empty!");
+      }
       return new PasswordAuthentication(username, password);
     } catch (IOException ioe) {
       ioe.printStackTrace();

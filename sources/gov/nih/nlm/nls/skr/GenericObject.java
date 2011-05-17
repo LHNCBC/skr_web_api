@@ -104,7 +104,7 @@ public class GenericObject
     this.initFields();
     try {
       this.formMap.put("RUN_PROG", new StringBody
-		       ("GENERIC", "text/plain", Charset.forName( "UTF-8" ))); // no validation
+		       ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" ))); // GENERIC_V validation
       this.formMap.put("Batch_Command", new StringBody
 		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
     } catch (UnsupportedEncodingException  e) {
@@ -205,6 +205,10 @@ public class GenericObject
 	    }
 	    reader.close();
 	    String address = sb.toString();
+	    if (address.equals("youraddress@goeshere")) { 
+	      System.out.println("Error: "+ address + " is not a valid email address.");
+	      return false;
+	    }
 	    if (address.indexOf("@",1) == -1) { return false; }
 	    return true;
 	  } catch (IOException e) {
