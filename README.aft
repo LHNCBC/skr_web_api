@@ -110,7 +110,10 @@ Examples directory.
 
 * How to Compile and Run:
 
-To compile the jar file and the examples from the top-level directory run "ant jar".
+To compile the jar file and the examples from the top-level directory
+run the command: |ant jar|.  If you don't have ant installed you can
+also use the script |build.sh| which will compile the SKR api sources,
+build the SKR api jar file, and build the example sources.
 
 To run one of the examples, run the one of the following commands from
 the Examples directory:
@@ -129,24 +132,24 @@ java -cp ../classes:../lib/skrAPI.jar:../lib/commons-logging-1.1.1.jar:\
 	../lib/httpmime-4.1.1.jar GenericBatchNew --email your@email filename
 ^>>
 
-or use test.sh:
+or use |run.sh|:
 ^<<
-../test.sh GenericBatch
+../run.sh GenericBatch
 
 or
 
-../test.sh GenericBatchNew --email your@email filename
+../run.sh GenericBatchNew --email your@email filename
 ^>>
 
-The GenericBatchNew example allows you to enter any options and the
+The |GenericBatchNew| example allows you to enter any options and the
 inputfile on the command line.  The usage of the program and available
 options follow:
 
 ^<<
-usage: GenericBatchNew [options] [inputFilename]
+usage: GenericBatchNew [options] inputFilename
   allowed options: 
-    --email <address> : set email address.
-    --command <name> : batch command: metamap, semrep, etc.
+    --email <address> : set email address. (required option)
+    --command <name> : batch command: metamap, semrep, etc. (default: MTI -opt1_DCMS -E)
     --note <notes> : batch notes 
     --silent : don't send email after job completes.
     --silent-errors : Silent on Errors
@@ -187,11 +190,11 @@ usage: GenericBatchNew [options] [inputFilename]
           when it encounters an error. See example below for try/catch
           sample.
 
-	* You must specify an Email Address. This is used for logging
+	* You must specify an |Email Address|. This is used for logging
           as well as notification when Batch jobs finish, or if there
           are problems with a job.
 
-	* You must specify the UpLoad_File field.
+	* You must specify the |UpLoad_File| field.
 
 	* Valid Batch job priorities are "0", "1", or "2". Where "0"
           represents Normal priority, "1" represents Medium, and "2"
@@ -266,3 +269,10 @@ try
 This calls the |GenericObject| instance method that takes care of the
 job from submission, monitoring, cleaning up, and returning a result.
 
+* Other Information
+
+More information on using the Apache Http Components Library used by
+this api can be found at: http://hc.apache.org/ .
+
+Information on the CAS RESTful API Protocol used by this api is at:
+https://wiki.jasig.org/display/CASUM/RESTful+API .

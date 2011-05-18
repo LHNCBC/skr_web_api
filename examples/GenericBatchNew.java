@@ -57,13 +57,16 @@ import gov.nih.nlm.nls.skr.*;
 
 public class GenericBatchNew
 {
+  static String defaultCommand = "MTI -opt1_DCMS -E";
+
 
   /** print information about server options */
   public static void printHelp() {
-    System.out.println("usage: GenericBatchNew [options] [inputFilename]");
+    System.out.println("usage: GenericBatchNew [options] inputFilename");
     System.out.println("  allowed options: ");
-    System.out.println("    --email <address> : set email address.");
-    System.out.println("    --command <name> : batch command: metamap, semrep, etc.");
+    System.out.println("    --email <address> : set email address. (required option)");
+    System.out.println("    --command <name> : batch command: metamap, semrep, etc. (default: " + 
+		       defaultCommand + ")");
     System.out.println("    --note <notes> : batch notes ");
     System.out.println("    --silent : don't send email after job completes.");
     System.out.println("    --silent-errors : Silent on Errors");
@@ -93,7 +96,7 @@ public class GenericBatchNew
     // NOTE: You MUST specify an email address because it is used for
     //       logging purposes.
     String emailAddress = null;
-    String batchCommand = "MTI -opt1_DCMS -E";
+    String batchCommand = defaultCommand;
     String batchNotes = "SKR API Test";
     boolean silentEmail = false;
     boolean silentOnErrors = false;
