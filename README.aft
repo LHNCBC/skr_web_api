@@ -22,18 +22,29 @@
           Java: 1.6.0
 
 	* We have tested and confirmed that the SKR API program runs
-          on the following operating systems: Linux Mac OS/X Microsoft
-          Windows XP
+          on the following operating systems: Linux, Mac OS/X, Microsoft
+          Windows XP.
 
-	* Apache's Jakarta Project Ant program is required if you wish
+	* Apache's Jakarta Project ANT program is required if you wish
 	  to modify and/or compile the SKR API source code using the
-	  existing build file: 1.6 or better Information Mark Symbol:
-	  Help about Ant
+	  existing build file: Use ANT 1.6 or better
+	  (available from: http://ant.apache.org).
 
 	* Your data in a recognized format. Please see the Supported
           File Formats section of the SKR Help Information web page
           for detailed information and examples of valid input
           formats.
+
+* Third Party and associated licenses
+
+The http*.jar files are from the Apache HttpComponents(tm) project
+(http://hc.apache.org/) which is under th Apache License, Version 2.0
+(http://www.apache.org/licenses/).
+
+The Json libraries are from JSON.org (http://json.org/) which uses the
+JSON License (http://www.json.org/license.html)
+
+
 
 
 * Introduction
@@ -155,6 +166,7 @@ usage: GenericBatchNew [options] inputFilename
     --silent-errors : Silent on Errors
     --singleLineInput : Single Line Delimited Input
     --singleLinePMID : Single Line Delimited Input w/ID
+    --priority : request a Run Priority Level: 0, 1, or 2
 ^>>
 
 * Programming Notes: 
