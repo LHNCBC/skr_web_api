@@ -44,7 +44,12 @@ The http*.jar files are from the Apache HttpComponents(tm) project
 The Json libraries are from JSON.org (http://json.org/) which uses the
 JSON License (http://www.json.org/license.html)
 
+The Password Masking in the Java Programming Language software is from
+http://java.sun.com/developer/technicalArticles/Security/pwordmask/. Author:
+Qusay H. Mahmoud with contributions from Alan Sommerer
 
+Information on the CAS RESTful API Protocol used by this API can be
+found at: https://wiki.jasig.org/display/CASUM/RESTful+API .
 
 
 * Introduction
