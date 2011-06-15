@@ -26,55 +26,58 @@
 */
 
 /**
- * Example program for submitting a new Generic Batch with Validation job
- * ("GenericObject(true)" turns on validation) request to the Scheduler to run.
- * You will be prompted for your username and password and if they are alright,
- * the job is submitted to the Scheduler and the results are returned in the
- * String "results" below.
+ * Example program for submitting an Interactive MetaMap request.
  *
- * NOTE: There is no Interactive facility for Generic jobs at this point.
- *
- * This example shows how to setup a basic Generic Batch with Validation job
- * with a small file (sample.txt) with ASCII MEDLINE formatted citations as
- * input data. You must set the Email_Address variable and use the UpLoad_File
- * to specify the data to be processed.  This example also shows the user
- * setting the SilentEmail option which tells the Scheduler to NOT send email
- * upon completing the job.
- *
- * This example is set to run the MTI (Medical Text Indexer) program using
- * the -opt1L_DCMS and -E options. You can also setup any environment variables
- * that will be needed by the program by setting the Batch_Env field.
- * The "-E" option is required for all of the various SKR tools (MetaMap,
- * SemRep, and MTI), so please make sure to add the option to your command!
+ * This example shows how to setup a basic Interactive MetaMap request.
+ * This runs the latest version of MetaMap with 1011 (2010AB) version
+ * of the UMLS Metathesaurus ("KSOURCE", "1011"), with "ignore_word_order" (-i)
+ * and "all_derivational_variants" (D) set as arguments to MetaMap.  The
+ * default "Human Readable" output will be produced.
  * 
  * @author	Jim Mork
- * @version	1.0, September 18, 2006
+ * @version	1.0, June 15, 2011
 **/
 
 
 import java.io.*;
 import gov.nih.nlm.nls.skr.*;
 
-public class GenericBatch
+public class MMInteractive
 {
    public static void main(String args[])
    {
-        GenericObject myGenericObj = new GenericObject(true);
+        GenericObject myIntMMObj = new GenericObject(false, 100);
 
-        // NOTE: You MUST specify an email address because it is used for
-        //       logging purposes.
+        // REQUIRED FIELDS:
+        //    -- Email_Address
+        //    -- APIText
+        //    -- KSOURCE
+        //         valid KSOURCE: 99, 06, 09, 0910, 10, 1011
+        //         respectively, UMLS 1999, 2006AA, 2009AA, 2009AB,
+        //                       2010AA, and 2010AB
+        //
+        // NOTE: The maximum length is 10,000 characters for APIText.  The
+        //       submission script will reject your request if it is larger.
+        //       APIText is also Required.
 
-        myGenericObj.setField("Email_Address", "youraddress@goeshere");
-        myGenericObj.setFileField("UpLoad_File", "./sample.txt");
-        myGenericObj.setField("Batch_Command", "MTI -opt1L_DCMS -E");
-        myGenericObj.setField("BatchNotes", "SKR API test");
-        myGenericObj.setField("SilentEmail", true);
+
+        myIntMMObj.setField("Email_Address", "youraddress@goeshere");
+
+        StringBuffer buffer = new StringBuffer("A spinal tap was performed and oligoclonal bands were detected in the cerebrospinal fluid.\n");
+        String bufferStr = buffer.toString();
+        myIntMMObj.setField("APIText", bufferStr);
+
+        myIntMMObj.setField("KSOURCE", "1011");
+
+        // Optional field, program will run default MetaMap if not specified
+
+        myIntMMObj.setField("COMMAND_ARGS", "-iD");
 
         // Submit the job request
 
         try
         {
-           String results = myGenericObj.handleSubmission();
+           String results = myIntMMObj.handleSubmission();
            System.out.print(results);
 
         } catch (RuntimeException ex) {
@@ -89,4 +92,4 @@ public class GenericBatch
            ex.printStackTrace();
         } // catch
    } // main
-} // class GenericBatch
+} // class MMInteractive

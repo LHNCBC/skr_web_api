@@ -41,11 +41,12 @@ import gov.nih.nlm.nls.cas.CasAuth;
  *       Specified via the Batch_Command field.  For example, 
  *       'setField("Batch_Command", "MTI -opt1_DCMS -E")'.
  *<br><br>
- *    3. Commands for the Generic jobs must not have ".." embedded in their path
+ *    3. Commands for the Generic jobs must NOT have ".." embedded in their path
  *<br><br>
  *    4. Generic jobs can be normal (without validation), or with validation
  *       where the Scheduler expects an "<< EOT >>" end of result marker so
- *       it can verify it received a complete result.
+ *       it can verify it received a complete result - and normally require
+ *       addition of the "-E" option on all of our commands.
  *<br><br>
  *    5. Generic jobs also allow you to specify any special environment<br>
  *       variables you might need inorder to run your command.
@@ -65,28 +66,48 @@ public class GenericObject
   public final String casAuthServer =
     System.getProperty("skrapi.cas.serverurl",
 		       "https://utslogin.nlm.nih.gov/cas/v1/tickets");
+
   /** url of skr api service, property:  skrapi.serviceurl*/
   public final String service =
     System.getProperty("skrapi.serviceurl",
 		       "http://skr.nlm.nih.gov/cgi-bin/SKR/Restricted_CAS/API_batchValidationII.pl");
-  // public String service = "http://indlx1.nlm.nih.gov:8000/perl/batch_validation.pl";
+
+  /** url of skr Interactive MetaMap api service, property:  skrapi.servicemminterurl*/
+  public final String serviceMMInter =
+    System.getProperty("skrapi.servicemminterurl",
+		       "http://skr.nlm.nih.gov/cgi-bin/SKR/Restricted_CAS/API_MM_interactive.pl");
+
+  /** url of skr Interactive SemRep api service, property:  skrapi.servicesrinterurl*/
+  public final String serviceSRInter =
+    System.getProperty("skrapi.servicesrinterurl",
+		       "http://skr.nlm.nih.gov/cgi-bin/SKR/Restricted_CAS/API_SR_interactive.pl");
+
   /** cas service ticket */
   private String serviceTicket = "";
+
   /** authenticator class name, property: nls.service.authenticator,
    * default get username and password from console : @see gov.nih.nls.util.ConsoleAuthImpl
    * see also java.net.Authenticator and java.net.PasswordAuthentication
    */
   private String authenticatorClassName = 
     System.getProperty("nls.service.authenticator", "gov.nih.nlm.nls.util.ConsoleAuthImpl");
+
   /** get the password for CAS using this method */
   private Authenticator authenticator = null;
+
   /** container for username and password */
   private PasswordAuthentication pa = null;
+
   /** service ticket timestamp, when ticket was acquired. */
   private Calendar ticketTimeStamp = Calendar.getInstance();
+
+  /** Final service we will use will be set here */
+  private String privService = "";
+
   /** service ticket timeout: default 8 minutes */
   public final static int ticketTimeout =
     Integer.parseInt(System.getProperty("skrapi.cas.ticket.timeout", "480000"));
+
   /** storage for form elements */
   Map<String,ContentBody> formMap = new HashMap<String,ContentBody>();
   // MultipartEntity formEntity = new MultipartEntity( HttpMultipartMode.BROWSER_COMPATIBLE );
@@ -96,15 +117,18 @@ public class GenericObject
 
   /** default constructor */
   public GenericObject() {
+    this.privService = service;
     this.promptCredentials();
     this.pa = this.authenticator.getPasswordAuthentication();
     this.serviceTicket =
-      CasAuth.getTicket(casAuthServer, this.pa.getUserName(), new String(this.pa.getPassword()), service);
+      CasAuth.getTicket(casAuthServer, this.pa.getUserName(), new String(this.pa.getPassword()), this.privService);
     this.ticketTimeStamp = Calendar.getInstance();
     this.initFields();
     try {
       this.formMap.put("RUN_PROG", new StringBody
 		       ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" ))); // GENERIC_V validation
+      this.formMap.put("SKR_API", new StringBody
+		       ("true", "text/plain", Charset.forName( "UTF-8" )));
       this.formMap.put("Batch_Command", new StringBody
 		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
     } catch (UnsupportedEncodingException  e) {
@@ -121,13 +145,52 @@ public class GenericObject
    */
   public GenericObject(boolean withValidation)
   {
+    this.privService = service;
     this.promptCredentials();
     this.pa = this.authenticator.getPasswordAuthentication();
     this.serviceTicket =
-      CasAuth.getTicket(casAuthServer, this.pa.getUserName(), new String(this.pa.getPassword()), service);
+      CasAuth.getTicket(casAuthServer, this.pa.getUserName(), new String(this.pa.getPassword()), this.privService);
     this.ticketTimeStamp = Calendar.getInstance();
     this.initFields();
     try {
+      this.formMap.put("SKR_API", new StringBody
+		       ("true", "text/plain", Charset.forName( "UTF-8" )));
+      this.formMap.put("Batch_Command", new StringBody
+		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
+      if(withValidation)
+	this.formMap.put("RUN_PROG", new StringBody
+			 ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" ))); // GENERIC_V w/ validation
+      else
+	this.formMap.put("RUN_PROG", new StringBody
+			 ("GENERIC", "text/plain", Charset.forName( "UTF-8" ))); // no validation
+    } catch (UnsupportedEncodingException  e) {
+      throw new RuntimeException(e);
+    }
+  } // GenericObject
+
+  /**
+   * Creates a new GenericObject object using the specified information.
+   *
+   *  This constructor sets up Interactive job requests
+   *
+   * @param  withValidation  Validate results?
+   * @param  whichInteractive  100 = MetaMap, 200 = SemRep
+   */
+  public GenericObject(boolean withValidation, int whichInteractive)
+  {
+    if(whichInteractive == 200)
+      this.privService = serviceSRInter;
+    else
+      this.privService = serviceMMInter;
+    this.promptCredentials();
+    this.pa = this.authenticator.getPasswordAuthentication();
+    this.serviceTicket =
+      CasAuth.getTicket(casAuthServer, this.pa.getUserName(), new String(this.pa.getPassword()), this.privService);
+    this.ticketTimeStamp = Calendar.getInstance();
+    this.initFields();
+    try {
+      this.formMap.put("SKR_API", new StringBody
+		       ("true", "text/plain", Charset.forName( "UTF-8" )));
       this.formMap.put("Batch_Command", new StringBody
 		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
       if(withValidation)
@@ -210,6 +273,7 @@ public class GenericObject
 	      return false;
 	    }
 	    if (address.indexOf("@",1) == -1) { return false; }
+	    if (address.indexOf(".",1) == -1) { return false; }
 	    return true;
 	  } catch (IOException e) {
 	    System.err.println("problems reading address string body");
@@ -234,8 +298,6 @@ public class GenericObject
 
   /**
    * Control the Batch job submission after validating command.
-   * handleSubmission checks to make sure the command being run is valid and
-   * then calls the JobObj routine to do the actual handling of the job.
    *
    * @return string containing content of server response.
    */
@@ -248,12 +310,12 @@ public class GenericObject
 	// get a new ticket and reset timestamp
 	this.serviceTicket =
 	  CasAuth.getTicket(casAuthServer, this.pa.getUserName(),
-			    new String(this.pa.getPassword()), service);
+			    new String(this.pa.getPassword()), this.privService);
 	this.ticketTimeStamp = Calendar.getInstance();
       }
       if (this.validEmail()) {
 	MultipartEntity formEntity = PostUtils.buildMultipartEntity( this.formMap );
-	HttpPost post = new HttpPost(this.service + "?ticket=" + this.serviceTicket);
+	HttpPost post = new HttpPost(this.privService + "?ticket=" + this.serviceTicket);
 	post.setEntity(formEntity);
 	// System.out.println("post request: " + post.getRequestLine() );
 	HttpResponse response = client.execute(post);
@@ -261,7 +323,7 @@ public class GenericObject
 	  // System.out.println("PAGE :" + EntityUtils.toString(response.getEntity()));
 	  EntityUtils.consume(response.getEntity()); // consume response input to release connection.
 	  // ignore 302 redirect and resubmit request with ticket.
-	  post = new HttpPost(this.service + "?ticket=" + this.serviceTicket);
+	  post = new HttpPost(this.privService + "?ticket=" + this.serviceTicket);
 	  post.setEntity(formEntity);
 	  // System.out.println("post request: " + post.getRequestLine() );
 	  response = client.execute(post);
@@ -318,52 +380,7 @@ public class GenericObject
   // ************************************************************************
 
   /**
-   * Validating the Generic Batch command.
-   * This routine ensures that the command specified actually resides in the
-   * /nfsvol/nls/bin directory and doesn't contain any ".." path redirections.
-   * If both of these conditions are met, validBatchCommand returns true.
-   *
-   * @return   boolean determination of whether command is valid or not
-   */
-  private boolean validBatchCommand()
-  {
-    //    NameValuePair CommandPair = this.formEntity.get("Batch_Command");
-    //    String Command = CommandPair.getValue();
-    String Command = "skr";
-    if(Command.indexOf("..") == -1)
-      {
-	int pos = Command.indexOf(' ');
-	String t2 = Command;
-	if(pos > -1)
-	  t2 = Command.substring(0, pos);
-	String pathname = "/nfsvol/nls/bin/" + t2;
-	File file = new File(pathname);
-	boolean exists = file.exists();
-
-	if(exists)
-	  return(true);
-	else
-          {
-	    System.err.println("Error: Unable to find command" +
-			       " in /nfsvol/nls/bin: #" + t2 + "#");
-	    throw new RuntimeException();
-          } // else
-      } // fi
-
-    else
-      {
-	System.err.println("Error: Batch Command contains \"..\"");
-	System.err.println("       Batch Command: " + Command);
-	throw new RuntimeException();
-      } // else
-  } // validBatchCommand
-
-  // ************************************************************************
-
-  /**
    * Insert and configure Generic Batch specific fields into the fieldsList.
-   * This builds on the default fields that are already in the list via the
-   * JobObj module.
    */
   public void initFields()
   {
@@ -372,6 +389,8 @@ public class GenericObject
     // is transmitted in the http request.  All other information is
     // discarded.  
     try {
+      this.formMap.put("SKR_API", new StringBody
+		       ("true", "text/plain", Charset.forName( "UTF-8" )));
       this.formMap.put("Batch_Command", new StringBody
 		       ("", "text/plain", Charset.forName( "UTF-8" )));
       

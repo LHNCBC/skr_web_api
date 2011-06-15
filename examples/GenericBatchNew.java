@@ -38,12 +38,14 @@
  * with a small file (sample.txt) with ASCII MEDLINE formatted citations as
  * input data. You must set the Email_Address variable and use the UpLoad_File
  * to specify the data to be processed.  This example also shows the user
- * setting the silentEmail option which tells the Scheduler to NOT send email
+ * setting the SilentEmail option which tells the Scheduler to NOT send email
  * upon completing the job.
  *
  * This example is set to run the MTI (Medical Text Indexer) program using
- * the -opt1_DCMS and -E options. You can also setup any environment variables
+ * the -opt1L_DCMS and -E options. You can also setup any environment variables
  * that will be needed by the program by setting the Batch_Env field.
+ * The "-E" option is required for all of the various SKR tools (MetaMap,
+ * SemRep, and MTI), so please make sure to add the option to your command!
  * 
  * @author	Jim Mork
  * @version	1.0, September 18, 2006
@@ -57,7 +59,7 @@ import gov.nih.nlm.nls.skr.*;
 
 public class GenericBatchNew
 {
-  static String defaultCommand = "MTI -opt1_DCMS -E";
+  static String defaultCommand = "MTI -opt1L_DCMS -E";
 
 
   /** print information about server options */
@@ -164,7 +166,7 @@ public class GenericBatchNew
     if (batchNotes != null) {
       myGenericObj.setField("BatchNotes", batchNotes);
     }
-    myGenericObj.setField("silentEmail", silentEmail);
+    myGenericObj.setField("SilentEmail", silentEmail);
     if (silentOnErrors) {
       myGenericObj.setField("ESilent", silentOnErrors);
     }
