@@ -72,6 +72,7 @@ public class GenericBatchNew
     System.out.println("    --silent-errors : Silent on Errors");
     System.out.println("    --singleLineInput : Single Line Delimited Input");
     System.out.println("    --singleLinePMID : Single Line Delimited Input w/ID");
+    System.out.println("    --priority : request a Run Priority Level: 0, 1, or 2");
   }
 
   /**
@@ -102,6 +103,7 @@ public class GenericBatchNew
     boolean silentOnErrors = false;
     boolean singleLineDelimitedInput = false;
     boolean singleLineDelimitedInputWithId = false;
+    int priority = -1;
 
       if (args.length < 1) {
 	printHelp();
@@ -134,8 +136,19 @@ public class GenericBatchNew
 	} else if ( args[i].equals("--singleLinePMID") ||
 		    args[i].equals("--singleLineDelimitedInputWithPMID")) {
 	   singleLineDelimitedInput = true;
-	} 
-
+	} else if ( args[i].equals("--priority") ) {
+	  i++;
+	  try {
+	    priority = Integer.parseInt(args[i]);
+	    if ((priority < 0) || (priority > 2)) {
+	      System.err.println("argument to --priority must be a integer between 0 and 2");
+	      System.exit(0);
+	    }
+	  } catch (NumberFormatException e) {
+	    System.err.println("argument to --priority must be a integer between 0 and 2");
+	    System.exit(0);
+	  }
+	}
       } else {
 	inputBuf.append(args[i]).append(" "); 
       }
@@ -160,6 +173,9 @@ public class GenericBatchNew
     }
     if (singleLineDelimitedInputWithId) {
       myGenericObj.setField("SingLinePMID", singleLineDelimitedInputWithId);
+    }
+    if (priority > 0) {
+      myGenericObj.setField("RPriority", Integer.toString(priority));
     }
 
     if (inputBuf.length() > 0) {
