@@ -75,6 +75,7 @@ public class GenericBatchNew
     System.out.println("    --singleLineInput : Single Line Delimited Input");
     System.out.println("    --singleLinePMID : Single Line Delimited Input w/ID");
     System.out.println("    --priority : request a Run Priority Level: 0, 1, or 2");
+    System.out.println("    --timeout : in seconds (must be at least 60)");
   }
 
   /**
@@ -106,6 +107,7 @@ public class GenericBatchNew
     boolean singleLineDelimitedInput = false;
     boolean singleLineDelimitedInputWithId = false;
     int priority = -1;
+    int timeout = -1;
 
       if (args.length < 1) {
 	printHelp();
@@ -150,6 +152,18 @@ public class GenericBatchNew
 	    System.err.println("argument to --priority must be a integer between 0 and 2");
 	    System.exit(0);
 	  }
+	} else if ( args[i].equals("--timeout") ) {
+	  i++;
+	  try {
+	    timeout = Integer.parseInt(args[i]);
+	    if ((timeout < 60) || (timeout > 2700)) {
+	      System.err.println("argument to --timeout must be a integer between 60 and 2700");
+	      System.exit(0);
+	    }
+	  } catch (NumberFormatException e) {
+	    System.err.println("argument to --timeout must be a integer between 60 and 2700");
+	    System.exit(0);
+	  }
 	}
       } else {
 	inputBuf.append(args[i]).append(" "); 
@@ -178,6 +192,10 @@ public class GenericBatchNew
     }
     if (priority > 0) {
       myGenericObj.setField("RPriority", Integer.toString(priority));
+    }
+
+    if (timeout > 0) {
+      myGenericObj.setField("IITimeout", Integer.toString(timeout));
     }
 
     if (inputBuf.length() > 0) {
