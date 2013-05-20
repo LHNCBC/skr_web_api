@@ -8,8 +8,10 @@ import java.nio.charset.Charset;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
+import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -98,15 +100,21 @@ public class GenericObject
   /** container for username and password */
   private PasswordAuthentication pa = null;
 
-  /** service ticket timestamp, when ticket was acquired. */
-  private Calendar ticketTimeStamp = Calendar.getInstance();
-
   /** Final service we will use will be set here */
   private String privService = "";
 
-  /** service ticket timeout: default 8 minutes */
-  public final static int ticketTimeout =
-    Integer.parseInt(System.getProperty("skrapi.cas.ticket.timeout", "480000"));
+  /** Use a proxy service if true, default value is false. */
+  public final static boolean useProxy = 
+    Boolean.valueOf(System.getProperty("skrapi.useproxy", "false"));
+  /** Hostname or ip of proxy server */
+  public final static String proxyHost =
+    System.getProperty("skrapi.proxyhost", "127.0.0.1");
+  /** Port number of proxy server */
+  public final static int proxyPort =
+    Integer.parseInt(System.getProperty("skrapi.proxyport", "8080"));
+  /** Protocol of proxy server, default protocol is http */
+  public final static String proxyProtocol =
+    System.getProperty("skrapi.proxyprotocol", "http");
 
   /** storage for form elements */
   Map<String,ContentBody> formMap = new HashMap<String,ContentBody>();
@@ -121,8 +129,8 @@ public class GenericObject
     this.promptCredentials();
     this.pa = this.authenticator.getPasswordAuthentication();
     this.serviceTicket =
-      CasAuth.getTicket(casAuthServer, this.pa.getUserName(), new String(this.pa.getPassword()), this.privService);
-    this.ticketTimeStamp = Calendar.getInstance();
+      CasAuth.getTicket(casAuthServer, this.pa.getUserName(), 
+			new String(this.pa.getPassword()), this.privService);
     this.initFields();
     try {
       this.formMap.put("RUN_PROG", new StringBody
@@ -134,7 +142,7 @@ public class GenericObject
     } catch (UnsupportedEncodingException  e) {
       throw new RuntimeException(e);
     }
-  }
+  } // Default GenericObject
 
   /**
    * Creates a new GenericObject object using the specified information.  This
@@ -149,8 +157,8 @@ public class GenericObject
     this.promptCredentials();
     this.pa = this.authenticator.getPasswordAuthentication();
     this.serviceTicket =
-      CasAuth.getTicket(casAuthServer, this.pa.getUserName(), new String(this.pa.getPassword()), this.privService);
-    this.ticketTimeStamp = Calendar.getInstance();
+      CasAuth.getTicket(casAuthServer, this.pa.getUserName(), 
+			new String(this.pa.getPassword()), this.privService);
     this.initFields();
     try {
       this.formMap.put("SKR_API", new StringBody
@@ -186,7 +194,6 @@ public class GenericObject
     this.pa = this.authenticator.getPasswordAuthentication();
     this.serviceTicket =
       CasAuth.getTicket(casAuthServer, this.pa.getUserName(), new String(this.pa.getPassword()), this.privService);
-    this.ticketTimeStamp = Calendar.getInstance();
     this.initFields();
     try {
       this.formMap.put("SKR_API", new StringBody
@@ -305,19 +312,23 @@ public class GenericObject
   {
     HttpClient client = new DefaultHttpClient();
     try {
-      // check service ticket age
-      if (Calendar.getInstance().compareTo(this.ticketTimeStamp) > ticketTimeout) {
-	// get a new ticket and reset timestamp
-	this.serviceTicket =
-	  CasAuth.getTicket(casAuthServer, this.pa.getUserName(),
-			    new String(this.pa.getPassword()), this.privService);
-	this.ticketTimeStamp = Calendar.getInstance();
+      if (useProxy) {
+	// use proxy for client
+	// address of proxy server
+	// HttpHost proxy = new HttpHost("127.0.0.1", 8080, "http");
+	HttpHost proxy = new HttpHost(proxyHost, proxyPort, proxyProtocol);
+	client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);
       }
+      // get a new ticket and reset timestamp
+      this.serviceTicket =
+	CasAuth.getTicket(casAuthServer, this.pa.getUserName(),
+			  new String(this.pa.getPassword()), this.privService);
       if (this.validEmail()) {
 	MultipartEntity formEntity = PostUtils.buildMultipartEntity( this.formMap );
+	
 	HttpPost post = new HttpPost(this.privService + "?ticket=" + this.serviceTicket);
 	post.setEntity(formEntity);
-	// System.out.println("post request: " + post.getRequestLine() );
+	System.out.println("post request: " + post.getRequestLine() );
 	HttpResponse response = client.execute(post);
 	if (response.getStatusLine().getStatusCode() == 302) {
 	  // System.out.println("PAGE :" + EntityUtils.toString(response.getEntity()));
@@ -449,7 +460,29 @@ public class GenericObject
   public void setFileField(String fieldName, String localFilename)
   {
     File localFile = new File(localFilename);
-    this.formMap.put(fieldName, new FileBody( localFile, "text/html" ));
+    this.formMap.put(fieldName, new FileBody( localFile, "text/plain" ));
+  } // setFileField
+
+  /**
+   * Set file field of the requested field/option for this job using
+   * in-memory buffer.
+   *
+   * @param  fieldName     Name of the field to be updated
+   * @param  bufferFilename Name of file to add to POST request
+   */
+  public void setFileBufferField(String fieldName, String bufferFilename, String buffer)
+  {
+    try {
+      // this is an inconvient hack to allow the HTTP components to
+      // read this as a file.
+      File localFile = File.createTempFile("skrapi_" + bufferFilename, null);
+      BufferedWriter bw = new BufferedWriter(new FileWriter(localFile));
+      bw.write(buffer);
+      bw.close();
+      this.formMap.put(fieldName, new FileBody( localFile, "text/plain" ));
+    } catch (IOException  e) {
+      throw new RuntimeException(e);
+    }
   } // setFileField
 
 } // class GenericObject
