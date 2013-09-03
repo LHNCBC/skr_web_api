@@ -75,14 +75,18 @@ public class GenericObject
 		       "http://skr.nlm.nih.gov/cgi-bin/SKR/Restricted_CAS/API_batchValidationII.pl");
 
   /** url of skr Interactive MetaMap api service, property:  skrapi.servicemminterurl*/
-  public final String serviceMMInter =
+  public final String serviceMMInterUrl =
     System.getProperty("skrapi.servicemminterurl",
 		       "http://skr.nlm.nih.gov/cgi-bin/SKR/Restricted_CAS/API_MM_interactive.pl");
 
   /** url of skr Interactive SemRep api service, property:  skrapi.servicesrinterurl*/
-  public final String serviceSRInter =
+  public final String serviceSRInterUrl =
     System.getProperty("skrapi.servicesrinterurl",
 		       "http://skr.nlm.nih.gov/cgi-bin/SKR/Restricted_CAS/API_SR_interactive.pl");
+
+  public final String serviceMTIInterUrl =
+    System.getProperty("skrapi.servicesrinterurl", 
+		       "http://skr.nlm.nih.gov/cgi-bin/SKR/Restricted_CAS/API_MTI_interactive.pl");
 
   /** cas service ticket */
   private String serviceTicket = "";
@@ -186,10 +190,17 @@ public class GenericObject
    */
   public GenericObject(boolean withValidation, int whichInteractive)
   {
-    if(whichInteractive == 200)
-      this.privService = serviceSRInter;
-    else
-      this.privService = serviceMMInter;
+    switch (whichInteractive) {
+    case 100:
+      this.privService = serviceMMInterUrl;
+      break;
+    case 200:
+      this.privService = serviceSRInterUrl;
+      break;
+    case 300:
+      this.privService = serviceMTIInterUrl;
+      break;
+    }
     this.promptCredentials();
     this.pa = this.authenticator.getPasswordAuthentication();
     this.serviceTicket =
