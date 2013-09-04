@@ -6,7 +6,7 @@ import javax.swing.*;
 import java.util.Properties;
 
 /**
- * An http authenthicator that uses system properities for initialization.
+ * An http authenthicator that uses a properties instance for initialization.
  *
  * This http 1.1 authenticator is initialized using system properties:
  * <dl>

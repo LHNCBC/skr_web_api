@@ -82,7 +82,8 @@ for all of the programs under the SKR Scheduler umbrella.
 
 * Overview of What Happens:
 
-The SKR API has been designed to allow you to interact with our web-based Scheduler using either our Batch or Interactive facilities.
+The SKR API has been designed to allow you to interact with our
+web-based Scheduler using either our Batch or Interactive facilities.
 
 	* Batch Jobs have three main phases:
 
@@ -285,6 +286,35 @@ try
 
 This calls the |GenericObject| instance method that takes care of the
 job from submission, monitoring, cleaning up, and returning a result.
+
+* Setting Authentication Credentials
+
+The SKR API service requires a UTS username and password, you can set
+these by assigning one of the provided authenticator classes or
+providing your own.
+
+	[ConsoleAuthImpl] The default method, provides the user with a
+	mechanism for entering the username and password from the
+	terminal that launched the program.
+	[DialogAuthImpl] This class rovides a GUI Dialog to enter the username and password.
+	[NetRcAuthImpl] This class uses a .netrc file containing the username and password. 
+	[PropertyAuthImpl] This class uses a properties instance for initialization.
+	[SystemPropertyAuthImpl] This class uses system properties for initialization.
+
+
+** Using an alternate authenticator
+
+Below is an example of using a alternate authenicator, in this case the DialogAuthImpl authenticator:
+
+	java -Dnls.service.authenticator=gov.nih.nlm.nls.util.DialogAuthImpl classname args
+
+** Using a custom authenticator class
+
+You can provide your own authentication class by extending the
+Authenticator abstract class (gov.nih.nlm.nls.util.Authenticator:
+http://skr.nlm.nih.gov/SKR_API/doc/gov/nih/nlm/nls/util/DialogAuthImpl.html) and providing an
+mechanism for setting the java.net.PasswordAuthentication object
+returned by the Authenticator's getPasswordAuthentication method.
 
 * Other Information
 

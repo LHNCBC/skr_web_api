@@ -4,10 +4,15 @@ import java.io.IOException;
 import java.net.PasswordAuthentication;
 
 /**
- * Describe class ConsoleAuthImpl here.
+ * Provides username and password input on the terminal the program
+ * was launched from with the prompts shown below:
+ * 
+ * <pre> 
+ *  Enter your Username: username
+ *  Enter your password: *************
+ * </pre> 
  *
- *
- * Created: Thu Apr  7 10:37:48 2011
+  * Created: Thu Apr  7 10:37:48 2011
  *
  * @author <a href="mailto:wjrogers@mail.nih.gov">Willie Rogers</a>
  * @version 1.0

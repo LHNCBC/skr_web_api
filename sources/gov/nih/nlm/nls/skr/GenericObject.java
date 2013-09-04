@@ -135,18 +135,28 @@ public class GenericObject
     this.serviceTicket =
       CasAuth.getTicket(casAuthServer, this.pa.getUserName(), 
 			new String(this.pa.getPassword()), this.privService);
-    this.initFields();
-    try {
-      this.formMap.put("RUN_PROG", new StringBody
-		       ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" ))); // GENERIC_V validation
-      this.formMap.put("SKR_API", new StringBody
-		       ("true", "text/plain", Charset.forName( "UTF-8" )));
-      this.formMap.put("Batch_Command", new StringBody
-		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
-    } catch (UnsupportedEncodingException  e) {
-      throw new RuntimeException(e);
-    }
+    initGenericObject();
   } // Default GenericObject
+
+  public GenericObject(String username, String password) {
+    this.privService = service;
+    this.authenticator = new InlineAuthenticator(username, password);
+    this.pa = this.authenticator.getPasswordAuthentication();
+    this.serviceTicket =
+      CasAuth.getTicket(casAuthServer, this.pa.getUserName(), 
+			new String(this.pa.getPassword()), this.privService);
+    initGenericObject();
+  }
+
+  public GenericObject(String username, String password, boolean withValidation) {
+    this.privService = service;
+    this.authenticator = new InlineAuthenticator(username, password);
+    this.pa = this.authenticator.getPasswordAuthentication();
+    this.serviceTicket =
+      CasAuth.getTicket(casAuthServer, this.pa.getUserName(), 
+			new String(this.pa.getPassword()), this.privService);
+    initGenericObjectWithValidation(withValidation);
+  }
 
   /**
    * Creates a new GenericObject object using the specified information.  This
@@ -163,22 +173,8 @@ public class GenericObject
     this.serviceTicket =
       CasAuth.getTicket(casAuthServer, this.pa.getUserName(), 
 			new String(this.pa.getPassword()), this.privService);
-    this.initFields();
-    try {
-      this.formMap.put("SKR_API", new StringBody
-		       ("true", "text/plain", Charset.forName( "UTF-8" )));
-      this.formMap.put("Batch_Command", new StringBody
-		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
-      if(withValidation)
-	this.formMap.put("RUN_PROG", new StringBody
-			 ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" ))); // GENERIC_V w/ validation
-      else
-	this.formMap.put("RUN_PROG", new StringBody
-			 ("GENERIC", "text/plain", Charset.forName( "UTF-8" ))); // no validation
-    } catch (UnsupportedEncodingException  e) {
-      throw new RuntimeException(e);
-    }
-  } // GenericObject
+    initGenericObjectWithValidation(withValidation);
+  }
 
   /**
    * Creates a new GenericObject object using the specified information.
@@ -205,21 +201,7 @@ public class GenericObject
     this.pa = this.authenticator.getPasswordAuthentication();
     this.serviceTicket =
       CasAuth.getTicket(casAuthServer, this.pa.getUserName(), new String(this.pa.getPassword()), this.privService);
-    this.initFields();
-    try {
-      this.formMap.put("SKR_API", new StringBody
-		       ("true", "text/plain", Charset.forName( "UTF-8" )));
-      this.formMap.put("Batch_Command", new StringBody
-		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
-      if(withValidation)
-	this.formMap.put("RUN_PROG", new StringBody
-			 ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" ))); // GENERIC_V w/ validation
-      else
-	this.formMap.put("RUN_PROG", new StringBody
-			 ("GENERIC", "text/plain", Charset.forName( "UTF-8" ))); // no validation
-    } catch (UnsupportedEncodingException  e) {
-      throw new RuntimeException(e);
-    }
+    initGenericObjectWithValidation(withValidation);
   } // GenericObject
 
   // ************************************************************************
@@ -241,6 +223,38 @@ public class GenericObject
       exception.printStackTrace(System.err);
     }
   }
+
+  public void initGenericObject() {
+    this.initFields();
+    try {
+      this.formMap.put("RUN_PROG", new StringBody
+		       ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" ))); // GENERIC_V validation
+      this.formMap.put("SKR_API", new StringBody
+		       ("true", "text/plain", Charset.forName( "UTF-8" )));
+      this.formMap.put("Batch_Command", new StringBody
+		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
+    } catch (UnsupportedEncodingException  e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public void initGenericObjectWithValidation(boolean withValidation) {
+    this.initFields();
+    try {
+      this.formMap.put("SKR_API", new StringBody
+		       ("true", "text/plain", Charset.forName( "UTF-8" )));
+      this.formMap.put("Batch_Command", new StringBody
+		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
+      if (withValidation)
+	this.formMap.put("RUN_PROG", new StringBody
+			 ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" ))); // GENERIC_V w/ validation
+      else
+	this.formMap.put("RUN_PROG", new StringBody
+			 ("GENERIC", "text/plain", Charset.forName( "UTF-8" ))); // no validation
+    } catch (UnsupportedEncodingException  e) {
+      throw new RuntimeException(e);
+    }
+  } // GenericObject
 
   /**
    * Print content of entity.
@@ -495,5 +509,25 @@ public class GenericObject
       throw new RuntimeException(e);
     }
   } // setFileField
+
+  class InlineAuthenticator extends Authenticator {
+    private String username = null;
+    private char[] password = null;
+   
+    public InlineAuthenticator (String username, String password) {
+      this.username = username;
+      this.password = password.toCharArray();
+    }
+
+    public PasswordAuthentication getPasswordAuthentication() {
+      if ( this.username != null && this.password != null) {
+	return new PasswordAuthentication(this.username, this.password);
+      } else {
+	return null;
+      } 
+    }
+  }
+
+
 
 } // class GenericObject
