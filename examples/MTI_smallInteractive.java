@@ -39,65 +39,29 @@
 import java.io.*;
 import gov.nih.nlm.nls.skr.*;
 
-public class MTIInteractive
+public class MTI_smallInteractive
 {
   public static void main(String args[])
-    throws IOException, FileNotFoundException
   {
-    StringBuffer inputBuf = new StringBuffer();
-    String emailAddress = "youraddress@goeshere";
+      GenericObject myIntMTIObj = new GenericObject(false, 300);
 
-    if (args.length < 1) {
-      // printHelp();
-      System.out.println("java MTIInteractive --email-address youraddress@goeshere inputfilename");
-      System.exit(1);
-    }
+      // REQUIRED FIELDS:
+      //    -- Email_Address
+      //    -- APIText
+      //
+      // NOTE: The maximum length is 10,000 characters for APIText.  The
+      //       submission script will reject your request if it is larger.
+      //       APIText is also Required.
 
-    int i = 0; 
-    while (i < args.length) {
-      if (args[i].charAt(0) == '-') {
-	if ( args[i].equals("--email-address") || args[i].equals("--email")) {
-	  i++;
-	  emailAddress = args[i];
-	}
-      } else {
-	inputBuf.append(args[i]).append(" "); 
-      }
-      i++;
-    }
+      StringBuffer buffer = new StringBuffer("A spinal tap was performed and oligoclonal bands were detected in the cerebrospinal fluid.\n");
+      String bufferStr = buffer.toString();
+      myIntMTIObj.setField("APIText", bufferStr);
 
-    GenericObject myIntMTIObj = new GenericObject(false, 300);
+      myIntMTIObj.setField("Email_Address", "youraddress@goeshere");
+      myIntMTIObj.setField("COMMAND_ARGS", "-opt1L_DCMS");
 
-    // REQUIRED FIELDS:
-    //    -- Email_Address
-    //    -- APIText
-    //
-    // NOTE: The maximum length is 10,000 characters for APIText.  The
-    //       submission script will reject your request if it is larger.
-    //       APIText is also Required.
-
-
-    if (inputBuf.length() > 0) {
-      StringBuffer stringBuf = new StringBuffer();
-      File inFile = new File(inputBuf.toString().trim()); 
-      if (inFile.exists()) {
-       	BufferedReader br = 
-       	  new BufferedReader(new FileReader(inputBuf.toString().trim()));
-       	String line;
-       	while ((line = br.readLine()) != null) {
-       	  stringBuf.append(line);
-       	}
-       	br.close();
-      	myIntMTIObj.setField("APIText", stringBuf.toString());
-      }
-    }
-
-    // myIntMTIObj.setField("Email_Address", "youraddress@goeshere");
-    myIntMTIObj.setField("Email_Address", emailAddress);
-    myIntMTIObj.setField("COMMAND_ARGS", "-opt1L_DCMS");
-
-    // Submit the job request
-    try
+      // Submit the job request
+      try
       {
 	String results = myIntMTIObj.handleSubmission();
 	System.out.print(results);
@@ -113,4 +77,4 @@ public class MTIInteractive
       ex.printStackTrace();
     } // catch
   } // main
-} // class MTIInteractive
+} // class MTI_smallInteractive
