@@ -59,7 +59,7 @@ public class GenericBatch
 {
    public static void main(String args[])
    {
-        GenericObject myGenericObj = new GenericObject(true);
+        GenericObject myGenericObj = new GenericObject();
 
         // NOTE: You MUST specify an email address because it is used for
         //       logging purposes.

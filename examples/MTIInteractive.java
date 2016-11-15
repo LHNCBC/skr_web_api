@@ -66,7 +66,7 @@ public class MTIInteractive
       i++;
     }
 
-    GenericObject myIntMTIObj = new GenericObject(false, 300);
+    GenericObject myIntMTIObj = new GenericObject(300);
 
     // REQUIRED FIELDS:
     //    -- Email_Address

@@ -43,7 +43,7 @@ public class MTI_smallInteractive
 {
   public static void main(String args[])
   {
-      GenericObject myIntMTIObj = new GenericObject(false, 300);
+      GenericObject myIntMTIObj = new GenericObject(300);
 
       // REQUIRED FIELDS:
       //    -- Email_Address

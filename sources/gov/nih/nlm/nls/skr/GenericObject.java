@@ -29,6 +29,7 @@ import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.util.EntityUtils;
 
 import gov.nih.nlm.nls.util.Authenticator;
+import gov.nih.nlm.nls.util.PropertyAuthImpl;
 import gov.nih.nlm.nls.util.PostUtils;
 import gov.nih.nlm.nls.cas.CasAuth;
 
@@ -36,21 +37,18 @@ import gov.nih.nlm.nls.cas.CasAuth;
  * Generic job specific fields and handling routines.
  *<br><br>
  * NOTES:<br>
- *    1. Generic jobs can only be Batch jobs, we don't support Interactive
- *       Generic jobs.
+ *    1. Generic jobs must have commands that reside in /nfsvol/nls/bin
+ *       on our internal computer systems.  Specified via the Batch_Command
+ *       field.  For example, 'setField("Batch_Command", "MTI -opt1_DCMS -E")'.
  *<br><br>
- *    2. Generic jobs must have commands that reside in /nfsvol/nls/bin<br>
- *       Specified via the Batch_Command field.  For example, 
- *       'setField("Batch_Command", "MTI -opt1_DCMS -E")'.
+ *    2. Commands for the Generic jobs must NOT have ".." embedded in their path
  *<br><br>
- *    3. Commands for the Generic jobs must NOT have ".." embedded in their path
+ *    3. Generic jobs require validation where the Scheduler expects
+ *       an "<< EOT >>" end of result marker so it can verify it received a
+ *       complete result.  All of the SKR utilities require the addition
+ *       of the "-E" option for this purpose.
  *<br><br>
- *    4. Generic jobs can be normal (without validation), or with validation
- *       where the Scheduler expects an "<< EOT >>" end of result marker so
- *       it can verify it received a complete result - and normally require
- *       addition of the "-E" option on all of our commands.
- *<br><br>
- *    5. Generic jobs also allow you to specify any special environment<br>
+ *    4. Generic jobs also allow you to specify any special environment<br>
  *       variables you might need inorder to run your command.
  *       Specified via the Batch_Env field.  For example, 
  *       'setField("Batch_Env", "NLS=/nfsvol/nls#CC=gcc")'.  Where each
@@ -58,8 +56,11 @@ import gov.nih.nlm.nls.cas.CasAuth;
  *       needed to run the MTI command in the above example, but are here for
  *       illustrative purposes only.
  *
- * @author	Jim Mork
- * @version	1.0, September 18, 2006
+ *       Original Author: Jim Mork (September 18, 2006)
+ *       Updated by Willie Rogers to allow for CAS authentication
+ *
+ * @author	Willie Rogers
+ * @version	2.0, October 26, 2016
  */
 
 public class GenericObject
@@ -72,21 +73,17 @@ public class GenericObject
   /** url of skr api service, property:  skrapi.serviceurl*/
   public final String service =
     System.getProperty("skrapi.serviceurl",
-		       "http://skr.nlm.nih.gov/cgi-bin/SKR/Restricted_CAS/API_batchValidationII.pl");
+		       "https://ii.nlm.nih.gov/cgi-bin/II/UTS_Required/API_batchValidationII.pl");
 
   /** url of skr Interactive MetaMap api service, property:  skrapi.servicemminterurl*/
   public final String serviceMMInterUrl =
     System.getProperty("skrapi.servicemminterurl",
-		       "http://skr.nlm.nih.gov/cgi-bin/SKR/Restricted_CAS/API_MM_interactive.pl");
+		       "https://ii.nlm.nih.gov/cgi-bin/II/UTS_Required/API_MM_interactive.pl");
 
   /** url of skr Interactive SemRep api service, property:  skrapi.servicesrinterurl*/
   public final String serviceSRInterUrl =
     System.getProperty("skrapi.servicesrinterurl",
-		       "http://skr.nlm.nih.gov/cgi-bin/SKR/Restricted_CAS/API_SR_interactive.pl");
-
-  public final String serviceMTIInterUrl =
-    System.getProperty("skrapi.servicesrinterurl", 
-		       "http://skr.nlm.nih.gov/cgi-bin/SKR/Restricted_CAS/API_MTI_interactive.pl");
+		       "https://ii.nlm.nih.gov/cgi-bin/II/UTS_Required/API_SR_interactive.pl");
 
   /** cas service ticket */
   private String serviceTicket = "";
@@ -104,21 +101,15 @@ public class GenericObject
   /** container for username and password */
   private PasswordAuthentication pa = null;
 
+  /** service ticket timestamp, when ticket was acquired. */
+  private Calendar ticketTimeStamp = Calendar.getInstance();
+
   /** Final service we will use will be set here */
   private String privService = "";
 
-  /** Use a proxy service if true, default value is false. */
-  public final static boolean useProxy = 
-    Boolean.valueOf(System.getProperty("skrapi.useproxy", "false"));
-  /** Hostname or ip of proxy server */
-  public final static String proxyHost =
-    System.getProperty("skrapi.proxyhost", "127.0.0.1");
-  /** Port number of proxy server */
-  public final static int proxyPort =
-    Integer.parseInt(System.getProperty("skrapi.proxyport", "8080"));
-  /** Protocol of proxy server, default protocol is http */
-  public final static String proxyProtocol =
-    System.getProperty("skrapi.proxyprotocol", "http");
+  /** service ticket timeout: default 0 minutes */
+  public final static int ticketTimeout =
+    Integer.parseInt(System.getProperty("skrapi.cas.ticket.timeout", "0"));
 
   /** storage for form elements */
   Map<String,ContentBody> formMap = new HashMap<String,ContentBody>();
@@ -133,76 +124,130 @@ public class GenericObject
     this.promptCredentials();
     this.pa = this.authenticator.getPasswordAuthentication();
     this.serviceTicket =
-      CasAuth.getTicket(casAuthServer, this.pa.getUserName(), 
-			new String(this.pa.getPassword()), this.privService);
-    initGenericObject();
+      CasAuth.getTicket(casAuthServer, this.pa.getUserName(),
+                        new String(this.pa.getPassword()), this.privService);
+    this.ticketTimeStamp = Calendar.getInstance();
+    this.initFields();
+    try {
+      this.formMap.put("RUN_PROG", new StringBody
+		       ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" )));
+      this.formMap.put("SKR_API", new StringBody
+		       ("true", "text/plain", Charset.forName( "UTF-8" )));
+      this.formMap.put("Batch_Command", new StringBody
+		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
+    } catch (UnsupportedEncodingException  e) {
+      throw new RuntimeException(e);
+    }
   } // Default GenericObject
-
-  public GenericObject(String username, String password) {
-    this.privService = service;
-    this.authenticator = new InlineAuthenticator(username, password);
-    this.pa = this.authenticator.getPasswordAuthentication();
-    this.serviceTicket =
-      CasAuth.getTicket(casAuthServer, this.pa.getUserName(), 
-			new String(this.pa.getPassword()), this.privService);
-    initGenericObject();
-  }
-
-  public GenericObject(String username, String password, boolean withValidation) {
-    this.privService = service;
-    this.authenticator = new InlineAuthenticator(username, password);
-    this.pa = this.authenticator.getPasswordAuthentication();
-    this.serviceTicket =
-      CasAuth.getTicket(casAuthServer, this.pa.getUserName(), 
-			new String(this.pa.getPassword()), this.privService);
-    initGenericObjectWithValidation(withValidation);
-  }
-
-  /**
-   * Creates a new GenericObject object using the specified information.  This
-   * version prompts the user for the username and password via the command
-   * line with the password covered by "*" as it's typed.
-   * 
-   * @param  withValidation  Validate results?
-   */
-  public GenericObject(boolean withValidation)
-  {
-    this.privService = service;
-    this.promptCredentials();
-    this.pa = this.authenticator.getPasswordAuthentication();
-    this.serviceTicket =
-      CasAuth.getTicket(casAuthServer, this.pa.getUserName(), 
-			new String(this.pa.getPassword()), this.privService);
-    initGenericObjectWithValidation(withValidation);
-  }
 
   /**
    * Creates a new GenericObject object using the specified information.
    *
-   *  This constructor sets up Interactive job requests
+   *  This constructor sets up a Generict with Validation Batch job
+   *  request without prompting the user for the username/password
+   *  information.  NOTE: Care should be taken when using this since
+   *  your authentication information is available in the code!!
    *
-   * @param  withValidation  Validate results?
+   * @param  username
+   * @param  password
+   */
+
+  public GenericObject(String username, String password) {
+    this.privService = service;
+    this.promptCredentials();
+    this.authenticator = new PropertyAuthImpl();
+    ((PropertyAuthImpl)this.authenticator).setUsername(username);
+    ((PropertyAuthImpl)this.authenticator).setPassword(password);
+    this.pa = this.authenticator.getPasswordAuthentication();
+    this.serviceTicket =
+      CasAuth.getTicket(casAuthServer, this.pa.getUserName(),
+                        new String(this.pa.getPassword()), this.privService);
+    this.ticketTimeStamp = Calendar.getInstance();
+    this.initFields();
+    try {
+      this.formMap.put("RUN_PROG", new StringBody
+		       ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" )));
+      this.formMap.put("SKR_API", new StringBody
+		       ("true", "text/plain", Charset.forName( "UTF-8" )));
+      this.formMap.put("Batch_Command", new StringBody
+		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
+    } catch (UnsupportedEncodingException  e) {
+      throw new RuntimeException(e);
+    }
+  } // Default GenericObject with Username/Password specified
+
+  /**
+   * Creates a new GenericObject object using the specified information.
+   *
+   *  This constructor sets up a Generict with Validation Interactive job
+   *  request
+   *
    * @param  whichInteractive  100 = MetaMap, 200 = SemRep
    */
-  public GenericObject(boolean withValidation, int whichInteractive)
+  public GenericObject(int whichInteractive)
   {
-    switch (whichInteractive) {
-    case 100:
-      this.privService = serviceMMInterUrl;
-      break;
-    case 200:
+    if(whichInteractive == 200)
       this.privService = serviceSRInterUrl;
-      break;
-    case 300:
-      this.privService = serviceMTIInterUrl;
-      break;
-    }
+    else
+      this.privService = serviceMMInterUrl;
     this.promptCredentials();
     this.pa = this.authenticator.getPasswordAuthentication();
     this.serviceTicket =
-      CasAuth.getTicket(casAuthServer, this.pa.getUserName(), new String(this.pa.getPassword()), this.privService);
-    initGenericObjectWithValidation(withValidation);
-  } // GenericObject
+      CasAuth.getTicket(casAuthServer, this.pa.getUserName(),
+                        new String(this.pa.getPassword()), this.privService);
+    this.ticketTimeStamp = Calendar.getInstance();
+    this.initFields();
+    try {
+      this.formMap.put("RUN_PROG", new StringBody
+		       ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" )));
+      this.formMap.put("SKR_API", new StringBody
+		       ("true", "text/plain", Charset.forName( "UTF-8" )));
+      this.formMap.put("Batch_Command", new StringBody
+		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
+    } catch (UnsupportedEncodingException  e) {
+      throw new RuntimeException(e);
+    }
+  } // Interactive GenericObject
+
+  /**
+   * Creates a new GenericObject object using the specified information.
+   *
+   *  This constructor sets up a Generict with Validation Interactive job
+   *  request without prompting the user for the username/password
+   *  information.  NOTE: Care should be taken when using this since
+   *  your authentication information is available in the code!!
+   *
+   * @param  whichInteractive  100 = MetaMap, 200 = SemRep
+   * @param  username
+   * @param  password
+   */
+
+  public GenericObject(int whichInteractive, String username, String password) {
+    if(whichInteractive == 200)
+      this.privService = serviceSRInterUrl;
+    else
+      this.privService = serviceMMInterUrl;
+    this.promptCredentials();
+    this.authenticator = new PropertyAuthImpl();
+    ((PropertyAuthImpl)this.authenticator).setUsername(username);
+    ((PropertyAuthImpl)this.authenticator).setPassword(password);
+    this.pa = this.authenticator.getPasswordAuthentication();
+    this.serviceTicket =
+      CasAuth.getTicket(casAuthServer, this.pa.getUserName(),
+                        new String(this.pa.getPassword()), this.privService);
+    this.ticketTimeStamp = Calendar.getInstance();
+    this.initFields();
+    try {
+      this.formMap.put("RUN_PROG", new StringBody
+		       ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" )));
+      this.formMap.put("SKR_API", new StringBody
+		       ("true", "text/plain", Charset.forName( "UTF-8" )));
+      this.formMap.put("Batch_Command", new StringBody
+		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
+    } catch (UnsupportedEncodingException  e) {
+      throw new RuntimeException(e);
+    }
+  }
 
   // ************************************************************************
 
@@ -223,38 +268,6 @@ public class GenericObject
       exception.printStackTrace(System.err);
     }
   }
-
-  public void initGenericObject() {
-    this.initFields();
-    try {
-      this.formMap.put("RUN_PROG", new StringBody
-		       ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" ))); // GENERIC_V validation
-      this.formMap.put("SKR_API", new StringBody
-		       ("true", "text/plain", Charset.forName( "UTF-8" )));
-      this.formMap.put("Batch_Command", new StringBody
-		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
-    } catch (UnsupportedEncodingException  e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  public void initGenericObjectWithValidation(boolean withValidation) {
-    this.initFields();
-    try {
-      this.formMap.put("SKR_API", new StringBody
-		       ("true", "text/plain", Charset.forName( "UTF-8" )));
-      this.formMap.put("Batch_Command", new StringBody
-		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
-      if (withValidation)
-	this.formMap.put("RUN_PROG", new StringBody
-			 ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" ))); // GENERIC_V w/ validation
-      else
-	this.formMap.put("RUN_PROG", new StringBody
-			 ("GENERIC", "text/plain", Charset.forName( "UTF-8" ))); // no validation
-    } catch (UnsupportedEncodingException  e) {
-      throw new RuntimeException(e);
-    }
-  } // GenericObject
 
   /**
    * Print content of entity.
@@ -335,25 +348,24 @@ public class GenericObject
    */
   public String handleSubmission()
   {
+    // address of proxy server
+    // HttpHost proxy = new HttpHost("127.0.0.1", 8080, "http");
     HttpClient client = new DefaultHttpClient();
+
     try {
-      if (useProxy) {
-	// use proxy for client
-	// address of proxy server
-	// HttpHost proxy = new HttpHost("127.0.0.1", 8080, "http");
-	HttpHost proxy = new HttpHost(proxyHost, proxyPort, proxyProtocol);
-	client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);
-      }
+      // use proxy for client
+      // client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);
+
       // get a new ticket and reset timestamp
       this.serviceTicket =
 	CasAuth.getTicket(casAuthServer, this.pa.getUserName(),
 			  new String(this.pa.getPassword()), this.privService);
+      this.ticketTimeStamp = Calendar.getInstance();
       if (this.validEmail()) {
 	MultipartEntity formEntity = PostUtils.buildMultipartEntity( this.formMap );
-	
 	HttpPost post = new HttpPost(this.privService + "?ticket=" + this.serviceTicket);
 	post.setEntity(formEntity);
-	System.out.println("post request: " + post.getRequestLine() );
+	// System.out.println("post request: " + post.getRequestLine() );
 	HttpResponse response = client.execute(post);
 	if (response.getStatusLine().getStatusCode() == 302) {
 	  // System.out.println("PAGE :" + EntityUtils.toString(response.getEntity()));
@@ -509,25 +521,5 @@ public class GenericObject
       throw new RuntimeException(e);
     }
   } // setFileField
-
-  class InlineAuthenticator extends Authenticator {
-    private String username = null;
-    private char[] password = null;
-   
-    public InlineAuthenticator (String username, String password) {
-      this.username = username;
-      this.password = password.toCharArray();
-    }
-
-    public PasswordAuthentication getPasswordAuthentication() {
-      if ( this.username != null && this.password != null) {
-	return new PasswordAuthentication(this.username, this.password);
-      } else {
-	return null;
-      } 
-    }
-  }
-
-
 
 } // class GenericObject

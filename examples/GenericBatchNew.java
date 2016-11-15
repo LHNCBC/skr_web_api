@@ -27,12 +27,9 @@
 
 /**
  * Example program for submitting a new Generic Batch with Validation job
- * ("GenericObject(true)" turns on validation) request to the Scheduler to run.
- * You will be prompted for your username and password and if they are alright,
- * the job is submitted to the Scheduler and the results are returned in the
- * String "results" below.
- *
- * NOTE: There is no Interactive facility for Generic jobs at this point.
+ * request to the Scheduler to run. You will be prompted for your username and
+ * password and if they are alright, the job is submitted to the Scheduler and
+ * the results are returned in the String "results" below.
  *
  * This example shows how to setup a basic Generic Batch with Validation job
  * with a small file (sample.txt) with ASCII MEDLINE formatted citations as
@@ -69,13 +66,14 @@ public class GenericBatchNew
     System.out.println("    --email <address> : set email address. (required option)");
     System.out.println("    --command <name> : batch command: metamap, semrep, etc. (default: " + 
 		       defaultCommand + ")");
+    System.out.println("    --commandOption <option>");
+    System.out.println("       example: --commandOption \"--prune\" --commandOption 5 (for option \"--prune 5\"");
     System.out.println("    --note <notes> : batch notes ");
     System.out.println("    --silent : don't send email after job completes.");
     System.out.println("    --silent-errors : Silent on Errors");
     System.out.println("    --singleLineInput : Single Line Delimited Input");
     System.out.println("    --singleLinePMID : Single Line Delimited Input w/ID");
     System.out.println("    --priority : request a Run Priority Level: 0, 1, or 2");
-    System.out.println("    --timeout : in seconds (must be at least 60)");
   }
 
   /**
@@ -101,13 +99,13 @@ public class GenericBatchNew
     //       logging purposes.
     String emailAddress = null;
     String batchCommand = defaultCommand;
+    StringBuilder batchCommandOptions = new StringBuilder();
     String batchNotes = "SKR API Test";
     boolean silentEmail = false;
     boolean silentOnErrors = false;
     boolean singleLineDelimitedInput = false;
     boolean singleLineDelimitedInputWithId = false;
     int priority = -1;
-    int timeout = -1;
 
       if (args.length < 1) {
 	printHelp();
@@ -128,6 +126,9 @@ public class GenericBatchNew
 	} else if ( args[i].equals("--command") || args[i].equals("--batch-command")) {
 	  i++;
 	  batchCommand = args[i];
+	} else if ( args[i].equals("--commandOption") || args[i].equals("--batch-command-option")) {
+	  i++;
+	  batchCommandOptions.append(" ").append(args[i]);
 	} else if ( args[i].equals("--note") || args[i].equals("--batch-note")) {
 	  i++;
 	  batchNotes = args[i];
@@ -152,18 +153,6 @@ public class GenericBatchNew
 	    System.err.println("argument to --priority must be a integer between 0 and 2");
 	    System.exit(0);
 	  }
-	} else if ( args[i].equals("--timeout") ) {
-	  i++;
-	  try {
-	    timeout = Integer.parseInt(args[i]);
-	    if ((timeout < 60) || (timeout > 2700)) {
-	      System.err.println("argument to --timeout must be a integer between 60 and 2700");
-	      System.exit(0);
-	    }
-	  } catch (NumberFormatException e) {
-	    System.err.println("argument to --timeout must be a integer between 60 and 2700");
-	    System.exit(0);
-	  }
 	}
       } else {
 	inputBuf.append(args[i]).append(" "); 
@@ -171,12 +160,14 @@ public class GenericBatchNew
       i++;
     }
     // Instantiate the object for Generic Batch
-    GenericObject myGenericObj = new GenericObject(true);
+    GenericObject myGenericObj = new GenericObject();
     fatalMessageIfEmptyString(emailAddress, "email address is required.");
+    System.out.println("Email_Address: " + emailAddress);
     myGenericObj.setField("Email_Address", emailAddress);
     fatalMessageIfEmptyString(batchCommand, "command for batch processing is required.");
 
-    myGenericObj.setField("Batch_Command", batchCommand);
+    System.out.println("Batch_Command: " + batchCommand + batchCommandOptions.toString());
+    myGenericObj.setField("Batch_Command", batchCommand + batchCommandOptions.toString());
     if (batchNotes != null) {
       myGenericObj.setField("BatchNotes", batchNotes);
     }
@@ -192,10 +183,6 @@ public class GenericBatchNew
     }
     if (priority > 0) {
       myGenericObj.setField("RPriority", Integer.toString(priority));
-    }
-
-    if (timeout > 0) {
-      myGenericObj.setField("IITimeout", Integer.toString(timeout));
     }
 
     if (inputBuf.length() > 0) {
