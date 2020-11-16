@@ -3,7 +3,6 @@ package gov.nih.nlm.nls.skr;
 import java.lang.*;
 import java.util.*;
 import java.io.*;
-import java.net.PasswordAuthentication;
 import java.nio.charset.Charset;
 
 import org.apache.http.Header;
@@ -65,6 +64,11 @@ import gov.nih.nlm.nls.cas.CasAuth;
 
 public class GenericObject
 {
+  /** url of server providing Ticket Granting Ticket from apikey */
+  public final String casTgtServer =
+    System.getProperty("skrapi.cas.tgtserverurl",
+		       "https://utslogin.nlm.nih.gov/cas/v1/api-key");
+  
   /** url of cas authentication server, property: skrapi.cas.serverurl */
   public final String casAuthServer =
     System.getProperty("skrapi.cas.serverurl",
@@ -88,18 +92,10 @@ public class GenericObject
   /** cas service ticket */
   private String serviceTicket = "";
 
-  /** authenticator class name, property: nls.service.authenticator,
-   * default get username and password from console : @see gov.nih.nls.util.ConsoleAuthImpl
-   * see also java.net.Authenticator and java.net.PasswordAuthentication
-   */
-  private String authenticatorClassName = 
-    System.getProperty("nls.service.authenticator", "gov.nih.nlm.nls.util.ConsoleAuthImpl");
-
-  /** get the password for CAS using this method */
-  private Authenticator authenticator = null;
-
-  /** container for username and password */
-  private PasswordAuthentication pa = null;
+  /** UTS api key from property: uts.apikey, if null check environment
+   * variable UTSAPIKEY */
+  private String apikey = System.getProperty("uts.apikey",
+					     System.getenv("UTS_API_KEY"));
 
   /** service ticket timestamp, when ticket was acquired. */
   private Calendar ticketTimeStamp = Calendar.getInstance();
@@ -121,11 +117,8 @@ public class GenericObject
   /** default constructor */
   public GenericObject() {
     this.privService = service;
-    this.promptCredentials();
-    this.pa = this.authenticator.getPasswordAuthentication();
     this.serviceTicket =
-      CasAuth.getTicket(casAuthServer, this.pa.getUserName(),
-                        new String(this.pa.getPassword()), this.privService);
+      CasAuth.getTicket(casAuthServer, casTgtServer, this.apikey, this.privService);
     this.ticketTimeStamp = Calendar.getInstance();
     this.initFields();
     try {
@@ -144,24 +137,18 @@ public class GenericObject
    * Creates a new GenericObject object using the specified information.
    *
    *  This constructor sets up a Generict with Validation Batch job
-   *  request without prompting the user for the username/password
-   *  information.  NOTE: Care should be taken when using this since
-   *  your authentication information is available in the code!!
+   *  request without prompting the user for the UTS api key.  
    *
-   * @param  username
-   * @param  password
+   *  NOTE: Care should be taken when using this since your
+   *  authentication information is available in the code!!
+   *
+   * @param apiKey UTS API Key
    */
 
-  public GenericObject(String username, String password) {
+  public GenericObject(String apiKey) {
     this.privService = service;
-    this.promptCredentials();
-    this.authenticator = new PropertyAuthImpl();
-    ((PropertyAuthImpl)this.authenticator).setUsername(username);
-    ((PropertyAuthImpl)this.authenticator).setPassword(password);
-    this.pa = this.authenticator.getPasswordAuthentication();
     this.serviceTicket =
-      CasAuth.getTicket(casAuthServer, this.pa.getUserName(),
-                        new String(this.pa.getPassword()), this.privService);
+      CasAuth.getTicket(casAuthServer, casTgtServer, apiKey, this.privService);
     this.ticketTimeStamp = Calendar.getInstance();
     this.initFields();
     try {
@@ -174,7 +161,7 @@ public class GenericObject
     } catch (UnsupportedEncodingException  e) {
       throw new RuntimeException(e);
     }
-  } // Default GenericObject with Username/Password specified
+  } // Default GenericObject with apikey specified
 
   /**
    * Creates a new GenericObject object using the specified information.
@@ -190,11 +177,9 @@ public class GenericObject
       this.privService = serviceSRInterUrl;
     else
       this.privService = serviceMMInterUrl;
-    this.promptCredentials();
-    this.pa = this.authenticator.getPasswordAuthentication();
     this.serviceTicket =
-      CasAuth.getTicket(casAuthServer, this.pa.getUserName(),
-                        new String(this.pa.getPassword()), this.privService);
+      CasAuth.getTicket(casAuthServer, casTgtServer,
+			this.apikey, this.privService);
     this.ticketTimeStamp = Calendar.getInstance();
     this.initFields();
     try {
@@ -212,29 +197,24 @@ public class GenericObject
   /**
    * Creates a new GenericObject object using the specified information.
    *
-   *  This constructor sets up a Generict with Validation Interactive job
-   *  request without prompting the user for the username/password
-   *  information.  NOTE: Care should be taken when using this since
-   *  your authentication information is available in the code!!
+   *  This constructor sets up a Generict with Validation Interactive
+   *  job request without prompting the user for the UTS API Key.
+   *
+   *  NOTE: Care should be taken when using this since your
+   *  authentication information is available in the code!!
    *
    * @param  whichInteractive  100 = MetaMap, 200 = SemRep
-   * @param  username
-   * @param  password
+   * @param  apiKey UTS API Key
    */
 
-  public GenericObject(int whichInteractive, String username, String password) {
+  public GenericObject(int whichInteractive, String apiKey) {
     if(whichInteractive == 200)
       this.privService = serviceSRInterUrl;
     else
       this.privService = serviceMMInterUrl;
-    this.promptCredentials();
-    this.authenticator = new PropertyAuthImpl();
-    ((PropertyAuthImpl)this.authenticator).setUsername(username);
-    ((PropertyAuthImpl)this.authenticator).setPassword(password);
-    this.pa = this.authenticator.getPasswordAuthentication();
     this.serviceTicket =
-      CasAuth.getTicket(casAuthServer, this.pa.getUserName(),
-                        new String(this.pa.getPassword()), this.privService);
+      CasAuth.getTicket(casAuthServer, casTgtServer,
+			apiKey, this.privService);
     this.ticketTimeStamp = Calendar.getInstance();
     this.initFields();
     try {
@@ -250,24 +230,6 @@ public class GenericObject
   }
 
   // ************************************************************************
-
-  /** Prompt user for username/password. */
-  void promptCredentials() {
-    try {
-      Class authenticatorClass = Class.forName(this.authenticatorClassName);
-      // Authenticator.setDefault((Authenticator)authenticatorClass.newInstance());
-      this.authenticator = (Authenticator)authenticatorClass.newInstance();
-    } catch (java.lang.ClassNotFoundException exception) {
-      System.err.println("Class " + authenticatorClassName + " not found!");
-      exception.printStackTrace(System.err);
-    } catch (java.lang.InstantiationException exception) {
-      System.err.println("Unable to instantiate Class " + authenticatorClassName);
-      exception.printStackTrace(System.err);
-    } catch (java.lang.IllegalAccessException exception) {
-      System.err.println("Illegal access of Class " + authenticatorClassName);
-      exception.printStackTrace(System.err);
-    }
-  }
 
   /**
    * Print content of entity.
@@ -358,8 +320,7 @@ public class GenericObject
 
       // get a new ticket and reset timestamp
       this.serviceTicket =
-	CasAuth.getTicket(casAuthServer, this.pa.getUserName(),
-			  new String(this.pa.getPassword()), this.privService);
+	CasAuth.getTicket(casAuthServer, casTgtServer, this.apikey, this.privService);
       this.ticketTimeStamp = Calendar.getInstance();
       if (this.validEmail()) {
 	MultipartEntity formEntity = PostUtils.buildMultipartEntity( this.formMap );
