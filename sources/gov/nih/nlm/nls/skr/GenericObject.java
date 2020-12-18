@@ -236,6 +236,7 @@ public class GenericObject
    *
    * @param respEntity http response entity
    * @return string containing content of entity.
+   * @throws IOException I/O exception
    */
   String printEntity(HttpEntity respEntity)
     throws IOException
@@ -256,7 +257,7 @@ public class GenericObject
 
   /**
    * Determine if email entry of form has a well formed email address.
-   * @parm addressBody content of email entry of form.
+   * @param addressBody content of email entry of form.
    * @return true if email is well formed.
    */
   public boolean emailIsWellFormed(ContentBody addressBody) {
@@ -467,6 +468,7 @@ public class GenericObject
    *
    * @param  fieldName     Name of the field to be updated
    * @param  bufferFilename Name of file to add to POST request
+   * @param  buffer         Content to written to temporary file.
    */
   public void setFileBufferField(String fieldName, String bufferFilename, String buffer)
   {
