@@ -15,7 +15,7 @@
    -->
 
   <property name="project"           value="."/>
-  <property name="project.src"       value="${project}/sources"/>
+  <property name="project.src"       value="${project}/src/main/java"/>
   <property name="project.examples"  value="${project}/examples"/>
   <property name="project.classes"   value="${project}/classes"/>
   <property name="project.doc"       value="${project}/doc"/>
