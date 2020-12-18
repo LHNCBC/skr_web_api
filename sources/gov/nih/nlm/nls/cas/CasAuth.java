@@ -45,9 +45,10 @@ public final class CasAuth
 
   /**
    * Obtain a  Single-Use Proxy Ticket from Central Authentication Server (CAS).
-   * @param server authentication server
+   * @param serverurl authentication server
+   * @param tgtserverurl ticket granting ticket server
    * @param apikey UTS profile API key
-   * @param service url of service with protected resources
+   * @param serviceurl url of service with protected resources
    * @return authentication ticket for service.
    */
   public static String getTicket(final String serverurl,
@@ -84,13 +85,13 @@ public final class CasAuth
    *
    * @param serverurl authentication server
    * @param ticketGrantingTicket a Proxy Granting Ticket.
-   * @param service url of service with protected resources
+   * @param serviceurl url of service with protected resources
    * @return authentication ticket for service.
    *
    */
   private static String getServiceTicket(final String serverurl,
 					 final String ticketGrantingTicket,
-					 final String service)
+					 final String serviceurl)
   {
     if (ticketGrantingTicket == null)
       return null;
@@ -98,7 +99,7 @@ public final class CasAuth
     final HttpClient client = new DefaultHttpClient();
 
     List<NameValuePair> formparams = new ArrayList<NameValuePair>();
-    formparams.add(new BasicNameValuePair("service", service));
+    formparams.add(new BasicNameValuePair("service", serviceurl));
     try {
       UrlEncodedFormEntity entity = new UrlEncodedFormEntity(formparams, "UTF-8");
       final HttpPost post = new HttpPost(serverurl + "/" + ticketGrantingTicket);
@@ -137,11 +138,11 @@ public final class CasAuth
    *   201 Created
    *   Location: http://serviceurl/cas/v1/tickets/{TGT id}
    * </pre>
-   * @param server authentication server
+   * @param serverurl authentication server
    * @param apikey UTS profile API key
    * @return a Proxy Granting Ticket.
    */
-  private static String getTicketGrantingTicket(final String server,
+  private static String getTicketGrantingTicket(final String serverurl,
 						final String apikey)
   {
     final HttpClient client = new DefaultHttpClient();
@@ -150,7 +151,7 @@ public final class CasAuth
     formparams.add(new BasicNameValuePair("apikey", apikey));
     try {
       UrlEncodedFormEntity entity = new UrlEncodedFormEntity(formparams, "UTF-8");
-      final HttpPost post = new HttpPost(server);
+      final HttpPost post = new HttpPost(serverurl);
       post.setEntity(entity);
 
       ResponseHandler<String> responseHandler = new BasicResponseHandler();
@@ -177,7 +178,7 @@ public final class CasAuth
   /**
    * Request for protected document using service ticket.
    * <pre>
-   *    GET &lt;resource url>?ticket=<service ticket> HTTP/1.0
+   *    GET {resource url}?ticket={service ticket} HTTP/1.0
    * </pre>
    * example:
    * <pre>
@@ -218,10 +219,10 @@ public final class CasAuth
 
   public static void main(final String[] args)
   {
-    // final String server = "http://localhost:8080/cas/v1/tickets";
+    // final String serverurl = "http://localhost:8080/cas/v1/tickets";
     // final String tgtserverurl = "http://localhost:8080/cas/v1/api-key";
     // final String apikey = "some hex number"
-    // final String service = "http://localhost:8080/service";
+    // final String serviceurl = "http://localhost:8080/service";
 
     if (args.length > 0) {
       final String serverurl = "https://utslogin.nlm.nih.gov/cas/v1/tickets";
