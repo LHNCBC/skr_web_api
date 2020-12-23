@@ -83,9 +83,9 @@ Unix:
 
     javac -cp ../classes:../lib/skrAPI.jar:../lib/commons-logging-1.1.1.jar:../lib/httpclient-cache-4.1.1.jar:../lib/httpcore-nio-4.1.jar:../lib/httpclient-4.1.1.jar:../lib/httpcore-4.1.jar:../lib/httpmime-4.1.1.jar -d ../classes GenericBatch.java
 
-or, you can use the "build.sh" script provided
+or, you can use the "compile.sh" script provided
 
-     ../build.sh GenericBatch.java
+     ../compile.sh GenericBatch.java
 
 Windows:
 
