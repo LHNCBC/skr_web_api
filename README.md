@@ -83,13 +83,23 @@ Unix:
 
     javac -cp ../classes:../lib/skrAPI.jar:../lib/commons-logging-1.1.1.jar:../lib/httpclient-cache-4.1.1.jar:../lib/httpcore-nio-4.1.jar:../lib/httpclient-4.1.1.jar:../lib/httpcore-4.1.jar:../lib/httpmime-4.1.1.jar -d ../classes GenericBatch.java
 
-or, you can use the "compile.sh" script provided
+or, you can use the "build.sh" script provided
 
-     ../compile.sh GenericBatch.java
+     ../build.sh GenericBatch.java
 
 Windows:
 
     javac -cp ..\classes;..\lib\skrAPI.jar;..\lib\commons-logging-1.1.1.jar;..\lib\httpclient-cache-4.1.1.jar;..\lib\httpcore-nio-4.1.jar;..\lib\httpclient-4.1.1.jar;..\lib\httpcore-4.1.jar;..\lib\httpmime-4.1.1.jar -d ..\classes GenericBatch.java
+
+Preliminary support for Maven has been provided.  However, the
+examples are not compiled when using the project file (pom.xml) in its
+current configuration.
+
+The following command will build the Web API without the examples:
+
+    mvn package
+	
+The classes and jar file will be in the directory "target".
 
 
 ## Setting the UTS API Key

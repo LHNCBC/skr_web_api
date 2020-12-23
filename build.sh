@@ -9,8 +9,8 @@ CP=$CP:$BASEDIR/lib/commons-logging-1.1.1.jar
 CP=$CP:$BASEDIR/lib/skrAPI.jar
 
 echo Compiling skrAPI sources
-echo javac -cp $CP -d $BASEDIR/classes `find sources -name \*.java`
-javac -cp $CP -d $BASEDIR/classes `find sources -name \*.java`
+echo javac -cp $CP -d $BASEDIR/classes `find src/main/java -name \*.java`
+javac -cp $CP -d $BASEDIR/classes `find src/main/java -name \*.java`
 
 echo Building jar file
 echo jar cf $BASEDIR/lib/skrAPI.jar -C classes .
