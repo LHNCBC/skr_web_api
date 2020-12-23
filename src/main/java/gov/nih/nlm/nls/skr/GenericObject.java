@@ -142,13 +142,14 @@ public class GenericObject
    *  NOTE: Care should be taken when using this since your
    *  authentication information is available in the code!!
    *
-   * @param apiKey UTS API Key
+   * @param newApiKey UTS API Key
    */
 
-  public GenericObject(String apiKey) {
+  public GenericObject(String newApiKey) {
+    this.apikey = newApiKey;
     this.privService = service;
     this.serviceTicket =
-      CasAuth.getTicket(casAuthServer, casTgtServer, apiKey, this.privService);
+      CasAuth.getTicket(casAuthServer, casTgtServer, newApiKey, this.privService);
     this.ticketTimeStamp = Calendar.getInstance();
     this.initFields();
     try {
@@ -204,17 +205,18 @@ public class GenericObject
    *  authentication information is available in the code!!
    *
    * @param  whichInteractive  100 = MetaMap, 200 = SemRep
-   * @param  apiKey UTS API Key
+   * @param  newApiKey UTS API Key
    */
 
-  public GenericObject(int whichInteractive, String apiKey) {
+  public GenericObject(int whichInteractive, String newApiKey) {
+    this.apikey = newApiKey;
     if(whichInteractive == 200)
       this.privService = serviceSRInterUrl;
     else
       this.privService = serviceMMInterUrl;
     this.serviceTicket =
       CasAuth.getTicket(casAuthServer, casTgtServer,
-			apiKey, this.privService);
+			newApiKey, this.privService);
     this.ticketTimeStamp = Calendar.getInstance();
     this.initFields();
     try {
