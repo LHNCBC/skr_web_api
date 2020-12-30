@@ -349,8 +349,6 @@ public class GenericObject
 	  multipartEntityBuilder.addPart(element.getKey(), element.getValue());
 	}
 	HttpEntity formEntity = multipartEntityBuilder.build();
-	System.out.println("formEntity: " + formEntity);
-	printEntity(formEntity);
 	HttpPost post = new HttpPost(this.privService + "?ticket=" + this.serviceTicket);
 	post.setEntity(formEntity);
 	// System.out.println("post request: " + post.getRequestLine() );
