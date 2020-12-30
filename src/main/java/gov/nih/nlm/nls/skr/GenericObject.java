@@ -10,17 +10,18 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
-import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.params.BasicHttpParams;
-import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.content.ContentBody;
 import org.apache.http.entity.mime.content.FileBody;
@@ -29,7 +30,6 @@ import org.apache.http.util.EntityUtils;
 
 import gov.nih.nlm.nls.util.Authenticator;
 import gov.nih.nlm.nls.util.PropertyAuthImpl;
-import gov.nih.nlm.nls.util.PostUtils;
 import gov.nih.nlm.nls.cas.CasAuth;
 
 /**
@@ -92,6 +92,16 @@ public class GenericObject
   /** cas service ticket */
   private String serviceTicket = "";
 
+  /** authenticator class name, property: nls.service.authenticator,
+   * default get username and password from console : @see gov.nih.nls.util.ConsoleAuthImpl
+   * see also java.net.Authenticator and java.net.PasswordAuthentication
+   */
+  private String authenticatorClassName = 
+    System.getProperty("nls.service.authenticator", "gov.nih.nlm.nls.util.ConsoleAuthImpl");
+
+  /** get the password for CAS using this method */
+  private Authenticator authenticator = null;
+
   /** UTS api key from property: uts.apikey, if null check environment
    * variable UTSAPIKEY */
   private String apikey = System.getProperty("uts.apikey",
@@ -117,18 +127,22 @@ public class GenericObject
   /** default constructor */
   public GenericObject() {
     this.privService = service;
+    this.promptCredentials();
+    if (this.apikey == null) {
+      this.apikey = this.authenticator.getApiKeyAuthentication();
+    }
     this.serviceTicket =
       CasAuth.getTicket(casAuthServer, casTgtServer, this.apikey, this.privService);
     this.ticketTimeStamp = Calendar.getInstance();
     this.initFields();
     try {
-      this.formMap.put("RUN_PROG", new StringBody
-		       ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" )));
-      this.formMap.put("SKR_API", new StringBody
-		       ("true", "text/plain", Charset.forName( "UTF-8" )));
-      this.formMap.put("Batch_Command", new StringBody
-		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
-    } catch (UnsupportedEncodingException  e) {
+      this.formMap.put("RUN_PROG",
+		       new StringBody("GENERIC_V", ContentType.TEXT_PLAIN));
+      this.formMap.put("SKR_API",
+		       new StringBody("true", ContentType.TEXT_PLAIN));
+      this.formMap.put("Batch_Command",
+		       new StringBody("skr", ContentType.TEXT_PLAIN));
+    } catch (Exception  e) {
       throw new RuntimeException(e);
     }
   } // Default GenericObject
@@ -153,13 +167,13 @@ public class GenericObject
     this.ticketTimeStamp = Calendar.getInstance();
     this.initFields();
     try {
-      this.formMap.put("RUN_PROG", new StringBody
-		       ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" )));
-      this.formMap.put("SKR_API", new StringBody
-		       ("true", "text/plain", Charset.forName( "UTF-8" )));
-      this.formMap.put("Batch_Command", new StringBody
-		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
-    } catch (UnsupportedEncodingException  e) {
+      this.formMap.put("RUN_PROG",
+		       new StringBody("GENERIC_V", ContentType.TEXT_PLAIN));
+      this.formMap.put("SKR_API",
+		       new StringBody("true", ContentType.TEXT_PLAIN));
+      this.formMap.put("Batch_Command",
+		       new StringBody("skr", ContentType.TEXT_PLAIN));
+    } catch (Exception  e) {
       throw new RuntimeException(e);
     }
   } // Default GenericObject with apikey specified
@@ -178,19 +192,23 @@ public class GenericObject
       this.privService = serviceSRInterUrl;
     else
       this.privService = serviceMMInterUrl;
+    this.promptCredentials();
+    if (this.apikey == null) {
+      this.apikey = this.authenticator.getApiKeyAuthentication();
+    }
     this.serviceTicket =
       CasAuth.getTicket(casAuthServer, casTgtServer,
 			this.apikey, this.privService);
     this.ticketTimeStamp = Calendar.getInstance();
     this.initFields();
     try {
-      this.formMap.put("RUN_PROG", new StringBody
-		       ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" )));
-      this.formMap.put("SKR_API", new StringBody
-		       ("true", "text/plain", Charset.forName( "UTF-8" )));
-      this.formMap.put("Batch_Command", new StringBody
-		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
-    } catch (UnsupportedEncodingException  e) {
+      this.formMap.put("RUN_PROG",
+		       new StringBody("GENERIC_V", ContentType.TEXT_PLAIN));
+      this.formMap.put("SKR_API",
+		       new StringBody("true", ContentType.TEXT_PLAIN));
+      this.formMap.put("Batch_Command",
+		       new StringBody("skr", ContentType.TEXT_PLAIN));
+    } catch (Exception  e) {
       throw new RuntimeException(e);
     }
   } // Interactive GenericObject
@@ -220,13 +238,13 @@ public class GenericObject
     this.ticketTimeStamp = Calendar.getInstance();
     this.initFields();
     try {
-      this.formMap.put("RUN_PROG", new StringBody
-		       ("GENERIC_V", "text/plain", Charset.forName( "UTF-8" )));
-      this.formMap.put("SKR_API", new StringBody
-		       ("true", "text/plain", Charset.forName( "UTF-8" )));
-      this.formMap.put("Batch_Command", new StringBody
-		       ("skr", "text/plain", Charset.forName( "UTF-8" )));
-    } catch (UnsupportedEncodingException  e) {
+      this.formMap.put("RUN_PROG",
+		       new StringBody("GENERIC_V", ContentType.TEXT_PLAIN));
+      this.formMap.put("SKR_API",
+		       new StringBody("true", ContentType.TEXT_PLAIN));
+      this.formMap.put("Batch_Command",
+		       new StringBody("skr", ContentType.TEXT_PLAIN));
+    } catch (Exception  e) {
       throw new RuntimeException(e);
     }
   }
@@ -252,6 +270,7 @@ public class GenericObject
       }
       br.close();
       System.out.print("response content: " + sb.toString());
+      System.out.flush();
       return sb.toString();
     } 
     return null;
@@ -315,22 +334,27 @@ public class GenericObject
   {
     // address of proxy server
     // HttpHost proxy = new HttpHost("127.0.0.1", 8080, "http");
-    HttpClient client = new DefaultHttpClient();
-
+    CloseableHttpClient client = HttpClients.createDefault();
     try {
       // use proxy for client
       // client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);
-
       // get a new ticket and reset timestamp
       this.serviceTicket =
 	CasAuth.getTicket(casAuthServer, casTgtServer, this.apikey, this.privService);
       this.ticketTimeStamp = Calendar.getInstance();
       if (this.validEmail()) {
-	MultipartEntity formEntity = PostUtils.buildMultipartEntity( this.formMap );
+	// was: MultipartEntity formEntity = PostUtils.buildMultipartEntity( this.formMap );
+	MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
+	for (Map.Entry<String,ContentBody> element: this.formMap.entrySet()) {
+	  multipartEntityBuilder.addPart(element.getKey(), element.getValue());
+	}
+	HttpEntity formEntity = multipartEntityBuilder.build();
+	System.out.println("formEntity: " + formEntity);
+	printEntity(formEntity);
 	HttpPost post = new HttpPost(this.privService + "?ticket=" + this.serviceTicket);
 	post.setEntity(formEntity);
 	// System.out.println("post request: " + post.getRequestLine() );
-	HttpResponse response = client.execute(post);
+	CloseableHttpResponse response = client.execute(post);
 	if (response.getStatusLine().getStatusCode() == 302) {
 	  // System.out.println("PAGE :" + EntityUtils.toString(response.getEntity()));
 	  EntityUtils.consume(response.getEntity()); // consume response input to release connection.
@@ -373,18 +397,20 @@ public class GenericObject
 	System.err.println("Error: Email Address must be specified");
 	throw new RuntimeException();
       }
-    } catch (java.io.UnsupportedEncodingException e) {
+    } catch (Exception e) {
       //LOG.warning(e.getMessage());
-      e.printStackTrace();
-      throw new RuntimeException(e);
-    } catch (IOException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
     } finally {
       // When HttpClient instance is no longer needed,
       // shut down the connection manager to ensure
       // immediate deallocation of all system resources
-      client.getConnectionManager().shutdown();
+      try {
+	client.close();
+      } catch (IOException e) {
+	e.printStackTrace();
+	throw new RuntimeException(e);
+      }
     }
     return null;
   } // handleSubmission
@@ -401,14 +427,13 @@ public class GenericObject
     // is transmitted in the http request.  All other information is
     // discarded.  
     try {
-      this.formMap.put("SKR_API", new StringBody
-		       ("true", "text/plain", Charset.forName( "UTF-8" )));
-      this.formMap.put("Batch_Command", new StringBody
-		       ("", "text/plain", Charset.forName( "UTF-8" )));
-      
-      this.formMap.put("Batch_Env", new StringBody
-		       ("", "text/plain", Charset.forName( "UTF-8" )));
-    } catch (UnsupportedEncodingException  e) {
+      this.formMap.put("SKR_API",
+		       new StringBody("true", ContentType.TEXT_PLAIN));
+      this.formMap.put("Batch_Command",
+		       new StringBody("", ContentType.TEXT_PLAIN));
+      this.formMap.put("Batch_Env",
+		       new StringBody("", ContentType.TEXT_PLAIN));
+    } catch (Exception  e) {
       throw new RuntimeException(e);
     }
   } // initFields
@@ -425,8 +450,8 @@ public class GenericObject
   {
     try {
       this.formMap.put(fieldName, new StringBody
-		       (fieldValue, "text/plain", Charset.forName( "UTF-8" )));
-    } catch (UnsupportedEncodingException  e) {
+		       (fieldValue, ContentType.TEXT_PLAIN));
+    } catch (Exception  e) {
       throw new RuntimeException(e);
     }
   } // setField
@@ -442,9 +467,10 @@ public class GenericObject
   public void setField(String fieldName, boolean fieldState)
   {
     try {
-      this.formMap.put(fieldName, new StringBody
-		       (Boolean.toString(fieldState), "text/plain", Charset.forName( "UTF-8" )));
-    } catch (UnsupportedEncodingException  e) {
+      this.formMap.put(fieldName,
+		       new StringBody(Boolean.toString(fieldState),
+				      ContentType.TEXT_PLAIN));
+    } catch (Exception  e) {
       throw new RuntimeException(e);
     }
   } // setField
@@ -461,7 +487,7 @@ public class GenericObject
   public void setFileField(String fieldName, String localFilename)
   {
     File localFile = new File(localFilename);
-    this.formMap.put(fieldName, new FileBody( localFile, "text/plain" ));
+    this.formMap.put(fieldName, new FileBody( localFile, ContentType.TEXT_PLAIN ));
   } // setFileField
 
   /**
@@ -481,10 +507,27 @@ public class GenericObject
       BufferedWriter bw = new BufferedWriter(new FileWriter(localFile));
       bw.write(buffer);
       bw.close();
-      this.formMap.put(fieldName, new FileBody( localFile, "text/plain" ));
+      this.formMap.put(fieldName, new FileBody( localFile, ContentType.TEXT_PLAIN ));
     } catch (IOException  e) {
       throw new RuntimeException(e);
     }
   } // setFileField
 
+ /** Prompt user for UTS API Key. */
+  void promptCredentials() {
+    try {
+      Class authenticatorClass = Class.forName(this.authenticatorClassName);
+      // Authenticator.setDefault((Authenticator)authenticatorClass.newInstance());
+      this.authenticator = (Authenticator)authenticatorClass.newInstance();
+    } catch (java.lang.ClassNotFoundException exception) {
+      System.err.println("Class " + authenticatorClassName + " not found!");
+      exception.printStackTrace(System.err);
+    } catch (java.lang.InstantiationException exception) {
+      System.err.println("Unable to instantiate Class " + authenticatorClassName);
+      exception.printStackTrace(System.err);
+    } catch (java.lang.IllegalAccessException exception) {
+      System.err.println("Illegal access of Class " + authenticatorClassName);
+      exception.printStackTrace(System.err);
+    }
+  }
 } // class GenericObject

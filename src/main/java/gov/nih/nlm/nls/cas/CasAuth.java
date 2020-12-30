@@ -15,9 +15,9 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.params.BasicHttpParams;
 
 /**
  * An example Java client to authenticate against CAS using REST services.
@@ -96,7 +96,7 @@ public final class CasAuth
     if (ticketGrantingTicket == null)
       return null;
 
-    final HttpClient client = new DefaultHttpClient();
+    final CloseableHttpClient client = HttpClients.createDefault();
 
     List<NameValuePair> formparams = new ArrayList<NameValuePair>();
     formparams.add(new BasicNameValuePair("service", serviceurl));
@@ -118,7 +118,11 @@ public final class CasAuth
       // When HttpClient instance is no longer needed,
       // shut down the connection manager to ensure
       // immediate deallocation of all system resources
-      client.getConnectionManager().shutdown();
+      try {
+	client.close();
+      } catch (final IOException e) {
+	LOG.warning(e.getMessage());
+      }
     }
     return null;
   }
@@ -145,21 +149,19 @@ public final class CasAuth
   private static String getTicketGrantingTicket(final String serverurl,
 						final String apikey)
   {
-    final HttpClient client = new DefaultHttpClient();
-
+    final CloseableHttpClient client = HttpClients.createDefault();
+      
     List<NameValuePair> formparams = new ArrayList<NameValuePair>();
     formparams.add(new BasicNameValuePair("apikey", apikey));
     try {
       UrlEncodedFormEntity entity = new UrlEncodedFormEntity(formparams, "UTF-8");
       final HttpPost post = new HttpPost(serverurl);
       post.setEntity(entity);
-
       ResponseHandler<String> responseHandler = new BasicResponseHandler();
       String response = client.execute(post, responseHandler);
       // System.out.println("response: " + response);
       final Matcher matcher = Pattern.compile(".*action=\".*/(.*?)\".*")
 	.matcher(response);
-      
       if (matcher.matches()) {
 	// System.out.println("ticket: " +  matcher.group(1));
 	return matcher.group(1);
@@ -169,9 +171,12 @@ public final class CasAuth
     } catch (final IOException e) {
       LOG.warning(e.getMessage());
     } finally {
-      client.getConnectionManager().shutdown();
+      try {
+	client.close();
+      } catch (final IOException e) {
+	LOG.warning(e.getMessage());
+      }
     }
-
     return null;
   }
 
@@ -196,18 +201,23 @@ public final class CasAuth
    */
   static String getProtectedDocument(String service, String ticket)
   {
-    final HttpClient client = new DefaultHttpClient();
+    try {
+      final CloseableHttpClient client = HttpClients.createDefault();
 
-    try { 
-      final HttpGet getReq = new HttpGet(service + "?ticket=" + ticket);
-      ResponseHandler<String> responseHandler = new BasicResponseHandler();
-      String responseBody = client.execute(getReq, responseHandler);
-      return responseBody;
+      try { 
+	final HttpGet getReq = new HttpGet(service + "?ticket=" + ticket);
+	ResponseHandler<String> responseHandler = new BasicResponseHandler();
+	String responseBody = client.execute(getReq, responseHandler);
+	return responseBody;
+      } catch (final IOException e) {
+	LOG.warning(e.getMessage());
+      } finally {
+	// client.getConnectionManager().shutdown();
+	client.close();
+      }
     } catch (final IOException e) {
       LOG.warning(e.getMessage());
-    } finally {
-      client.getConnectionManager().shutdown();
-    }
+    }     
     return null;
   }
 
