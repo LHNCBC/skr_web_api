@@ -4,15 +4,10 @@ import java.io.IOException;
 import java.net.PasswordAuthentication;
 
 /**
- * Provides username and password input on the terminal the program
- * was launched from with the prompts shown below:
- * 
- * <pre> 
- *  Enter your Username: username
- *  Enter your password: *************
- * </pre> 
+ * Describe class ConsoleAuthImpl here.
  *
-  * Created: Thu Apr  7 10:37:48 2011
+ *
+ * Created: Thu Apr  7 10:37:48 2011
  *
  * @author <a href="mailto:wjrogers@mail.nih.gov">Willie Rogers</a>
  * @version 1.0
@@ -29,6 +24,21 @@ public class ConsoleAuthImpl extends Authenticator {
 	throw new RuntimeException("Error: Password string is empty!");
       }
       return new PasswordAuthentication(username, password);
+    } catch (IOException ioe) {
+      ioe.printStackTrace();
+    } // catch
+    return null;
+  }
+
+  public String getApiKeyAuthentication() {
+    String apiKey = null;
+    try {
+      apiKey = Utils.getTextInput("Enter your API Key: ");
+      if (apiKey == null) {
+	System.err.println("Error: API Key string is empty!");
+	throw new RuntimeException("Error: API Key string is empty!");
+      }
+      return apiKey;
     } catch (IOException ioe) {
       ioe.printStackTrace();
     } // catch

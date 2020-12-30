@@ -36,4 +36,20 @@ public class DialogAuthImpl extends Authenticator {
          return null;
       }
    }
+
+  public String getApiKeyAuthentication() {
+      JTextField apikeyField = new JTextField();
+      JPanel panel = new JPanel(new GridLayout(2,2));
+      panel.add(new JLabel("API Key"));
+      panel.add(apikeyField);
+      int option = JOptionPane.showConfirmDialog(null, new Object[] { panel },
+                   "Enter API Key",
+                   JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+      if ( option == JOptionPane.OK_OPTION ) {
+	String apiKey = apikeyField.getText();
+	return apiKey;
+      } else {
+	return null;
+    } 
+  }
 }

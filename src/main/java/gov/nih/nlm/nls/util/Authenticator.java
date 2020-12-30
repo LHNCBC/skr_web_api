@@ -28,4 +28,12 @@ public abstract class Authenticator {
     return null;
   }
 
+  /**
+   * Get API Key authentication credentials.
+   *
+   * @return a String instance with API key filled-in.
+   */
+  public String getApiKeyAuthentication() {
+    return null;
+  }
 }

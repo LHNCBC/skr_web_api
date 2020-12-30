@@ -100,4 +100,30 @@ public class NetRcAuthImpl extends Authenticator {
       return null;
     } 
   }
+
+  public String getApiKeyAuthentication(String machinename) {
+    String apiKey = null;
+    try {
+      BufferedReader reader = 
+	new BufferedReader(new FileReader(netrcFilename));
+      String line = null;
+      while ((line = reader.readLine()) != null) {
+	List tokens = this.split(line, "| \t\n\r\f");
+	// System.out.println("no of tokens: " + tokens.size());
+	if (((String)tokens.get(1)).equals(machinename) && 
+	    ((String)tokens.get(2)).equals("apikey")) {
+	  apiKey = (String)tokens.get(3);
+	  break;
+	}
+      }
+      reader.close();
+      return apiKey;
+    } catch (FileNotFoundException fnfe) {
+      fnfe.printStackTrace();
+      throw new RuntimeException(fnfe);
+    } catch (IOException ioe) {
+      ioe.printStackTrace();
+      throw new RuntimeException(ioe);
+    } // catch
+  }
 } // NetRcAuthImpl
