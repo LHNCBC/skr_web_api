@@ -95,11 +95,11 @@ Preliminary support for Maven has been provided.  However, the
 examples are not compiled when using the project file (pom.xml) in its
 current configuration.
 
-The following command will build the Web API without the examples:
+The following command will build the Web API with the examples:
 
     mvn package
 	
-The classes and jar file will be in the directory "target".
+The compiled classes and jar file will be in the directory "target".
 
 
 ## Setting the UTS API Key
