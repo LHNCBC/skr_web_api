@@ -89,6 +89,11 @@ public class GenericObject
     System.getProperty("skrapi.servicesrinterurl",
 		       "https://ii.nlm.nih.gov/cgi-bin/II/UTS_Required/API_SR_interactive.pl");
 
+  /** url of skr Interactive MTI api service, property:  skrapi.servicemtiinterurl*/
+  public final String serviceMTInterUrl =
+    System.getProperty("skrapi.servicemtiinterurl",
+		       "https://ii.nlm.nih.gov/cgi-bin/II/UTS_Required/API_MTI_interactive.pl");
+
   /** cas service ticket */
   private String serviceTicket = "";
 
@@ -184,14 +189,21 @@ public class GenericObject
    *  This constructor sets up a Generict with Validation Interactive job
    *  request
    *
-   * @param  whichInteractive  100 = MetaMap, 200 = SemRep
+   * @param  whichInteractive  100 = MetaMap, 200 = SemRep, 300 = MTI
    */
   public GenericObject(int whichInteractive)
   {
-    if(whichInteractive == 200)
-      this.privService = serviceSRInterUrl;
-    else
+    switch (whichInteractive) {
+    case 100:
       this.privService = serviceMMInterUrl;
+      break;
+    case 200:
+      this.privService = serviceSRInterUrl;
+      break;
+    case 300:
+      this.privService = serviceMTInterUrl;
+      break;
+    }
     this.promptCredentials();
     if (this.apikey == null) {
       this.apikey = this.authenticator.getApiKeyAuthentication();
@@ -222,16 +234,23 @@ public class GenericObject
    *  NOTE: Care should be taken when using this since your
    *  authentication information is available in the code!!
    *
-   * @param  whichInteractive  100 = MetaMap, 200 = SemRep
+   * @param  whichInteractive  100 = MetaMap, 200 = SemRep, 300 = MTI
    * @param  newApiKey UTS API Key
    */
 
   public GenericObject(int whichInteractive, String newApiKey) {
     this.apikey = newApiKey;
-    if(whichInteractive == 200)
-      this.privService = serviceSRInterUrl;
-    else
+    switch (whichInteractive) {
+    case 100:
       this.privService = serviceMMInterUrl;
+      break;
+    case 200:
+      this.privService = serviceSRInterUrl;
+      break;
+    case 300:
+      this.privService = serviceMTInterUrl;
+      break;
+    }
     this.serviceTicket =
       CasAuth.getTicket(casAuthServer, casTgtServer,
 			newApiKey, this.privService);
