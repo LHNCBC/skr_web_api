@@ -21,7 +21,7 @@
   <property name="project.doc"       value="${project}/doc"/>
   <property name="project.lib"       value="${project}/lib"/>
   <property name="common-logging"    value="${project.lib}/commons-logging-1.1.1.jar"/>
-  <property name="httpclient"        value="${project.lib}/httpclient-4.1.1.jar"/>
+  <property name="httpclient"        value="${project.lib}/httpclient-4.3.6.jar"/>
   <property name="httpclient.cache"  value="${project.lib}/httpclient-cache-4.1.1.jar"/>
   <property name="httpcore"          value="${project.lib}/httpcore-4.1.jar"/>
   <property name="httpcore.nio"      value="${project.lib}/httpcore-nio-4.1.jar"/>

@@ -27,9 +27,9 @@
 
 /**
  * Example program for submitting a new Generic Batch with Validation job
- * request to the Scheduler to run. You will be prompted for your username and
- * password and if they are alright, the job is submitted to the Scheduler and
- * the results are returned in the String "results" below.
+ * request to the Scheduler to run. You will be prompted for your UTS API Key
+ * and if it is valid, the job is submitted to the Scheduler and the results
+ * are returned in the String "results" below.
  *
  * This example shows how to setup a basic Generic Batch with Validation job
  * with a small file (sample.txt) with ASCII MEDLINE formatted citations as
@@ -43,6 +43,7 @@
  * that will be needed by the program by setting the Batch_Env field.
  * The "-E" option is required for all of the various SKR tools (MetaMap,
  * SemRep, and MTI), so please make sure to add the option to your command!
+ * This program automatically adds the "-E" option.
  * 
  * @author	Jim Mork
  * @version	1.0, September 18, 2006
@@ -56,8 +57,7 @@ import gov.nih.nlm.nls.skr.*;
 
 public class GenericBatchNew
 {
-  static String defaultCommand = "MTI -opt1L_DCMS -E";
-
+  static String defaultCommand = "MTI -opt1L_DCMS";
 
   /** print information about server options */
   public static void printHelp() {
@@ -66,8 +66,6 @@ public class GenericBatchNew
     System.out.println("    --email <address> : set email address. (required option)");
     System.out.println("    --command <name> : batch command: metamap, semrep, etc. (default: " + 
 		       defaultCommand + ")");
-    System.out.println("    --commandOption <option>");
-    System.out.println("       example: --commandOption \"--prune\" --commandOption 5 (for option \"--prune 5\"");
     System.out.println("    --note <notes> : batch notes ");
     System.out.println("    --silent : don't send email after job completes.");
     System.out.println("    --silent-errors : Silent on Errors");
@@ -99,8 +97,8 @@ public class GenericBatchNew
     //       logging purposes.
     String emailAddress = null;
     String batchCommand = defaultCommand;
-    StringBuilder batchCommandOptions = new StringBuilder();
     String batchNotes = "SKR API Test";
+    String inputfilename = "";
     boolean silentEmail = false;
     boolean silentOnErrors = false;
     boolean singleLineDelimitedInput = false;
@@ -126,9 +124,6 @@ public class GenericBatchNew
 	} else if ( args[i].equals("--command") || args[i].equals("--batch-command")) {
 	  i++;
 	  batchCommand = args[i];
-	} else if ( args[i].equals("--commandOption") || args[i].equals("--batch-command-option")) {
-	  i++;
-	  batchCommandOptions.append(" ").append(args[i]);
 	} else if ( args[i].equals("--note") || args[i].equals("--batch-note")) {
 	  i++;
 	  batchNotes = args[i];
@@ -140,7 +135,7 @@ public class GenericBatchNew
 	   singleLineDelimitedInput = true;
 	} else if ( args[i].equals("--singleLinePMID") ||
 		    args[i].equals("--singleLineDelimitedInputWithPMID")) {
-	   singleLineDelimitedInput = true;
+	   singleLineDelimitedInputWithId = true;
 	} else if ( args[i].equals("--priority") ) {
 	  i++;
 	  try {
@@ -153,21 +148,37 @@ public class GenericBatchNew
 	    System.err.println("argument to --priority must be a integer between 0 and 2");
 	    System.exit(0);
 	  }
+	} else if ( args[i].equals("-i") ||
+		    args[i].equals("--inputfile") ) {
+	  i++;
+	  inputfilename = args[i];
+	} else {
+	  // unknown option, pass it through
+	  options.add(args[i]);
+	  if (i < (args.length - 1)) {
+	    if (args[i + 1].charAt(0) != '-'){
+	      i++;
+	      options.add(args[i]);
+	    }
+	  }
 	}
-      } else {
-	inputBuf.append(args[i]).append(" "); 
-      }
+      } 
       i++;
     }
     // Instantiate the object for Generic Batch
     GenericObject myGenericObj = new GenericObject();
     fatalMessageIfEmptyString(emailAddress, "email address is required.");
-    System.out.println("Email_Address: " + emailAddress);
     myGenericObj.setField("Email_Address", emailAddress);
+    // always add -E option
+    options.add("-E");
+    if ((batchCommand.length() > 0) && (options.size() != 0)) {
+      batchCommand = batchCommand + " " + String.join(" ", options);
+    }
+    System.out.println("batchCommand: " + batchCommand);
+    System.out.println("inputfilename: " + inputfilename);
     fatalMessageIfEmptyString(batchCommand, "command for batch processing is required.");
 
-    System.out.println("Batch_Command: " + batchCommand + batchCommandOptions.toString());
-    myGenericObj.setField("Batch_Command", batchCommand + batchCommandOptions.toString());
+    myGenericObj.setField("Batch_Command", batchCommand);
     if (batchNotes != null) {
       myGenericObj.setField("BatchNotes", batchNotes);
     }
@@ -184,11 +195,10 @@ public class GenericBatchNew
     if (priority > 0) {
       myGenericObj.setField("RPriority", Integer.toString(priority));
     }
-
-    if (inputBuf.length() > 0) {
-      File inFile = new File(inputBuf.toString().trim()); 
+    if (inputfilename.length() > 0) {
+      File inFile = new File(inputfilename.toString().trim()); 
       if (inFile.exists()) {
-	myGenericObj.setFileField("UpLoad_File", inputBuf.toString().trim());
+	myGenericObj.setFileField("UpLoad_File", inputfilename.toString().trim());
       }
     }
     // Submit the job request
