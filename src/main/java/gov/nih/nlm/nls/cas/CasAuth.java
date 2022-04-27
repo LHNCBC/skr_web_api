@@ -162,9 +162,11 @@ public final class CasAuth
       // System.out.println("response: " + response);
       final Matcher matcher = Pattern.compile(".*action=\".*/(.*?)\".*")
 	.matcher(response);
-      if (matcher.matches()) {
+      if (matcher.find()) {
 	// System.out.println("ticket: " +  matcher.group(1));
 	return matcher.group(1);
+      } else {
+	throw new RuntimeException("error extracting ticket granting ticket.");
       }
     } catch (final   java.io.UnsupportedEncodingException  e) {
       LOG.warning(e.getMessage());
