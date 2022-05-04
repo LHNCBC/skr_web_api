@@ -105,7 +105,7 @@ The compiled classes and jar file will be in the directory "target".
 
 
 One way to set the API key is to use the environmental variable
-UTS\_API\_KEY in shell.
+UTS\_API\_KEY in the shell.
 
     $ export UTS_API_KEY=“1234-5678-9ABC-DEF1”
 
