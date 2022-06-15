@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
@@ -104,6 +105,7 @@ public final class CasAuth
       UrlEncodedFormEntity entity = new UrlEncodedFormEntity(formparams, "UTF-8");
       final HttpPost post = new HttpPost(serverurl + "/" + ticketGrantingTicket);
       post.setEntity(entity);
+      post.setHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0 Firefox/26.0");
 
       // Create a response handler
       ResponseHandler<String> responseHandler = new BasicResponseHandler();
@@ -157,6 +159,7 @@ public final class CasAuth
       UrlEncodedFormEntity entity = new UrlEncodedFormEntity(formparams, "UTF-8");
       final HttpPost post = new HttpPost(serverurl);
       post.setEntity(entity);
+      post.setHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0 Firefox/26.0");
       ResponseHandler<String> responseHandler = new BasicResponseHandler();
       String response = client.execute(post, responseHandler);
       // System.out.println("response: " + response);
@@ -208,6 +211,7 @@ public final class CasAuth
 
       try { 
 	final HttpGet getReq = new HttpGet(service + "?ticket=" + ticket);
+	getReq.setHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0 Firefox/26.0");
 	ResponseHandler<String> responseHandler = new BasicResponseHandler();
 	String responseBody = client.execute(getReq, responseHandler);
 	return responseBody;

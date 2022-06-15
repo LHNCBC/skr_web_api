@@ -8,6 +8,7 @@ import java.nio.charset.Charset;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
@@ -370,6 +371,7 @@ public class GenericObject
 	HttpEntity formEntity = multipartEntityBuilder.build();
 	HttpPost post = new HttpPost(this.privService + "?ticket=" + this.serviceTicket);
 	post.setEntity(formEntity);
+	post.setHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0 Firefox/26.0");
 	// System.out.println("post request: " + post.getRequestLine() );
 	CloseableHttpResponse response = client.execute(post);
 	if (response.getStatusLine().getStatusCode() == 302) {
@@ -378,6 +380,7 @@ public class GenericObject
 	  // ignore 302 redirect and resubmit request with ticket.
 	  post = new HttpPost(this.privService + "?ticket=" + this.serviceTicket);
 	  post.setEntity(formEntity);
+	  post.setHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0 Firefox/26.0");
 	  // System.out.println("post request: " + post.getRequestLine() );
 	  response = client.execute(post);
 	  HttpEntity respEntity = response.getEntity();
