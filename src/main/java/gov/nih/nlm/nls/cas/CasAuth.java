@@ -8,16 +8,18 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.http.HttpHeaders;
-import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.config.CookieSpecs;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 
 /**
@@ -97,7 +99,13 @@ public final class CasAuth
     if (ticketGrantingTicket == null)
       return null;
 
-    final CloseableHttpClient client = HttpClients.createDefault();
+    RequestConfig requestConfig = RequestConfig.custom()
+	.setCookieSpec(CookieSpecs.STANDARD)
+	.build();
+
+    final CloseableHttpClient client = HttpClientBuilder.create()
+	.setDefaultRequestConfig(requestConfig)
+	.build();
 
     List<NameValuePair> formparams = new ArrayList<NameValuePair>();
     formparams.add(new BasicNameValuePair("service", serviceurl));
@@ -106,7 +114,6 @@ public final class CasAuth
       final HttpPost post = new HttpPost(serverurl + "/" + ticketGrantingTicket);
       post.setEntity(entity);
       post.setHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0 Firefox/26.0");
-
       // Create a response handler
       ResponseHandler<String> responseHandler = new BasicResponseHandler();
       String responseBody = client.execute(post, responseHandler);
@@ -151,8 +158,14 @@ public final class CasAuth
   private static String getTicketGrantingTicket(final String serverurl,
 						final String apikey)
   {
-    final CloseableHttpClient client = HttpClients.createDefault();
-      
+    RequestConfig requestConfig = RequestConfig.custom()
+	.setCookieSpec(CookieSpecs.STANDARD)
+	.build();
+
+    final CloseableHttpClient client = HttpClientBuilder.create()
+	.setDefaultRequestConfig(requestConfig)
+	.build();
+
     List<NameValuePair> formparams = new ArrayList<NameValuePair>();
     formparams.add(new BasicNameValuePair("apikey", apikey));
     try {
@@ -171,7 +184,7 @@ public final class CasAuth
       } else {
 	throw new RuntimeException("error extracting ticket granting ticket.");
       }
-    } catch (final   java.io.UnsupportedEncodingException  e) {
+    } catch (final java.io.UnsupportedEncodingException  e) {
       LOG.warning(e.getMessage());
     } catch (final IOException e) {
       LOG.warning(e.getMessage());
@@ -208,22 +221,15 @@ public final class CasAuth
   {
     try {
       final CloseableHttpClient client = HttpClients.createDefault();
-
-      try { 
-	final HttpGet getReq = new HttpGet(service + "?ticket=" + ticket);
-	getReq.setHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0 Firefox/26.0");
-	ResponseHandler<String> responseHandler = new BasicResponseHandler();
-	String responseBody = client.execute(getReq, responseHandler);
-	return responseBody;
-      } catch (final IOException e) {
-	LOG.warning(e.getMessage());
-      } finally {
-	// client.getConnectionManager().shutdown();
-	client.close();
-      }
+      final HttpGet getReq = new HttpGet(service + "?ticket=" + ticket);
+      getReq.setHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0 Firefox/26.0");
+      ResponseHandler<String> responseHandler = new BasicResponseHandler();
+      String responseBody = client.execute(getReq, responseHandler);
+      client.close();
+      return responseBody;
     } catch (final IOException e) {
       LOG.warning(e.getMessage());
-    }     
+    }
     return null;
   }
 
