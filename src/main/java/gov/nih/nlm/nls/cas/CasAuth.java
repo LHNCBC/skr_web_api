@@ -174,7 +174,8 @@ public final class CasAuth
       post.setEntity(entity);
       post.setHeader(HttpHeaders.USER_AGENT, "Mozilla/5.0 Firefox/26.0");
       ResponseHandler<String> responseHandler = new BasicResponseHandler();
-      String response = client.execute(post, responseHandler);
+      String response0 = client.execute(post, responseHandler);
+      String response = response0.replace("\n", "");
       // System.out.println("response: " + response);
       final Matcher matcher = Pattern.compile(".*action=\".*/(.*?)\".*")
 	.matcher(response);
